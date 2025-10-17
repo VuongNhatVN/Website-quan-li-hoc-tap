@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Nhiệm Vụ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <main class="app-container">
+    <h1>📝 Sổ tay Nhiệm vụ</h1>
+
+    <form id="add-task-form" class="task-form">
+      <input type="text" id="task-title" placeholder="Tiêu đề nhiệm vụ..." required>
+      <input type="date" id="task-due-date" required>
+      <button type="submit">Thêm Nhiệm Vụ</button>
+    </form>
+    <button id="logout-btn">Đăng xuất</button>
+    <h2>Danh sách cần làm</h2>
+    <ul id="task-list" class="task-list">
+      </ul>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
