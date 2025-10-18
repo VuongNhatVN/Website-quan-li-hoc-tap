@@ -21,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModalBtn = document.querySelector('.close-btn');
 
     const API_URL = '/api/tasks';
-    let localTasks = [];
     let notificationIntervalId = null;
+    let localTasks = [];
 
     // === PHẦN 2: HÀM HIỂN THỊ NHIỆM VỤ ===
     const displayTasks = (tasks) => {
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeModal() {
         taskModal.style.display = 'none';
     }
-    function showCustomNotification(taskTitle, type) {
+    function showCustomNotification(taskTitle, type, minutesLeft = 0) {
         let bodyText = '';
         if (type === 'upcoming') { bodyText = `Nhiệm vụ "${taskTitle}" sẽ hết hạn trong ${minutesLeft} phút nữa!`; }
         else if (type === 'due') { bodyText = `Đã đến hạn hoàn thành nhiệm vụ "${taskTitle}"!`; }
@@ -134,6 +134,52 @@ document.addEventListener('DOMContentLoaded', () => {
         // Hiển thị thông báo trình duyệt
         new Notification('🔔 Nhắc nhở nhiệm vụ!', { body: bodyText, icon: '...' });
     }
+    function checkTasksForNotification() {
+        console.log(`[${new Date().toLocaleTimeString()}] ===== Bắt đầu chu kỳ kiểm tra =====`);
+        const now = new Date();
+        const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
+
+        localTasks.forEach(task => {
+            const dueDate = new Date(task.dueDate);
+            if (isNaN(dueDate.getTime()) || task.isCompleted) return;
+
+            const timeDiff = dueDate.getTime() - now.getTime();
+            // Sử dụng Math.ceil để làm tròn lên, thân thiện hơn với người dùng
+            // Ví dụ: 14.1 phút sẽ là 15 phút.
+            const minutesLeft = Math.ceil(timeDiff / (1000 * 60));
+
+            // Log cho từng nhiệm vụ để dễ theo dõi
+            console.log(`-> Task: "${task.title}", Hạn: ${dueDate.toLocaleTimeString()}, Còn lại: ${minutesLeft} phút.`);
+
+            // 1. Kiểm tra thông báo "Sắp đến hạn" (dưới hoặc bằng 15 phút)
+            const isUpcoming = timeDiff > 0 && timeDiff <= 15 * 60 * 1000;
+            if (isUpcoming) {
+                console.log(`   - "${task.title}" là SẮP ĐẾN HẠN.`);
+                if (!hasBeenNotified(task._id, 'upcoming')) {
+                    console.log(`   - ✅ CHƯA THÔNG BÁO "upcoming". Đang gửi...`);
+                    showCustomNotification(task.title, 'upcoming', minutesLeft);
+                    markAsNotified(task._id, 'upcoming');
+                } else {
+                    console.log(`   - 💤 ĐÃ THÔNG BÁO "upcoming" trước đó.`);
+                }
+            }
+
+            // 2. Kiểm tra thông báo "Đã đến hạn" (trong vòng 1 phút qua)
+            const isDue = dueDate <= now && dueDate > oneMinuteAgo;
+            if (isDue) {
+                console.log(`   - "${task.title}" là ĐÃ ĐẾN HẠN.`);
+                if (!hasBeenNotified(task._id, 'due')) {
+                    console.log(`   - ✅ CHƯA THÔNG BÁO "due". Đang gửi...`);
+                    showCustomNotification(task.title, 'due');
+                    openModal(task.title);
+                    markAsNotified(task._id, 'due');
+                } else {
+                    console.log(`   - 💤 ĐÃ THÔNG BÁO "due" trước đó.`);
+                }
+            }
+        });
+        console.log(`================= Kết thúc chu kỳ =================`);
+    }
     closeModalBtn.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => {
         if (event.target == taskModal) { closeModal(); }
@@ -142,40 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function showNotification(taskTitle, type) { /* ... */ }
     function markAsNotified(taskId, type) { /* ... */ }
     function hasBeenNotified(taskId, type) { /* ... */ }
-    function checkTasksForNotification() {
-        const now = new Date();
-        const oneMinuteAgo = new Date(now.getTime() - 1 * 1000);
-
-        localTasks.forEach(task => {
-            if (task.isCompleted) return;
-
-            const dueDate = new Date(task.dueDate);
-            
-            // Tính toán khoảng cách thời gian bằng mili giây
-            const timeDiff = dueDate.getTime() - now.getTime();
-
-            // 1. Kiểm tra thông báo "Sắp đến hạn" (dưới 15 phút và lớn hơn 0)
-            if (timeDiff > 0 && timeDiff <= 15 * 60 * 1000) {
-                if (!hasBeenNotified(task._id, 'upcoming')) {
-                    // Chuyển đổi mili giây thành phút và làm tròn
-                    const minutesLeft = Math.round(timeDiff / (1000 * 60));
-                    // Truyền số phút vào hàm thông báo
-                    showCustomNotification(task.title, 'upcoming', minutesLeft);
-                    markAsNotified(task._id, 'upcoming');
-                }
-            }
-
-            // 2. Kiểm tra thông báo "Đã đến hạn" (trong vòng 1 phút vừa qua)
-            if (dueDate <= now && dueDate > oneMinuteAgo) {
-                if (!hasBeenNotified(task._id, 'due')) {
-                    showCustomNotification(task.title, 'due');
-                    openModal(task.title);
-                    markAsNotified(task._id, 'due');
-                }
-            }
-        });
-    }
-
     function initializeNotifications() {
         if (!("Notification" in window)) {
             enableNotificationsBtn.textContent = 'Trình duyệt không hỗ trợ 🚫';
