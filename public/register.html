@@ -1,28 +1,50 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đăng Ký Tài Khoản</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Đăng Ký - Sổ tay Nhiệm vụ</title>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 
-  <main class="app-container">
-    <h1>Tạo tài khoản mới</h1>
+  <header>
+    <div class="wrap">
+      <img src="https://cdn-icons-png.flaticon.com/512/2921/2921222.png" alt="Logo">
+      <h1>SỔ TAY NHIỆM VỤ TRỰC TUYẾN</h1>
+    </div>
+  </header>
 
-    <form id="register-form">
-      <input type="text" id="fullName" placeholder="Nhập họ và tên" required>
-      <input type="email" id="email" placeholder="Nhập email của bạn" required>
-      <input type="password" id="password" placeholder="Tạo mật khẩu" required>
-      <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu" required>
-      <button type="submit">Đăng Ký</button>
-    </form>
-
-    <p class="auth-switch">Đã có tài khoản? <a href="/login.html">Đăng nhập ngay</a></p>
+  <main>
+    <div class="form-box">
+      <h2>Đăng Ký</h2>
+      <form onsubmit="return registerUser(event)">
+        <input type="text" id="fullName" placeholder="Họ và tên" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Mật khẩu" required>
+        <input type="password" id="confirmPassword" placeholder="Xác nhận mật khẩu" required>
+        <button type="submit">Tạo tài khoản</button>
+      </form>
+      <p>Đã có tài khoản? <a href="/login.html">Đăng nhập ngay</a></p>
+    </div>
   </main>
 
-  <script src="register.js"></script>
+  <footer>
+    <div class="wrap">
+      <div>
+        <h4>Thông tin</h4>
+        <p>Học sinh: <strong>Võ Nhật Vương</strong></p>
+        <p>Trường THPT Hàm Thuận Nam</p>
+      </div>
+      <div>
+        <h4>Liên hệ trường</h4>
+        <p>Địa chỉ: Hàm Thuận Nam, Bình Thuận</p>
+        <p>Email: <a href="mailto:c3hamthuannam.binhthuan@moet.edu.vn">c3hamthuannam.binhthuan@moet.edu.vn</a></p>
+        <p>Website: <a href="https://thpthamthuannam.edu.vn">thpthamthuannam.edu.vn</a></p>
+      </div>
+    </div>
+  </footer>
 
+  <script> src="register.js"</script>
 </body>
 </html>

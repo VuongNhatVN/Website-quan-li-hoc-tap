@@ -1,19 +1,50 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Đăng Nhập</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Đăng Nhập - Sổ tay Nhiệm vụ</title>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <main class="app-container">
-    <h1>Đăng Nhập</h1>
-    <form id="login-form">
-      <input type="email" id="email" placeholder="Email" required>
-      <input type="password" id="password" placeholder="Mật khẩu" required>
-      <button type="submit">Đăng Nhập</button>
-    </form>
-    <p>Chưa có tài khoản? <a href="/register.html">Đăng ký ngay</a></p>
+
+  <!-- Header -->
+  <header>
+    <div class="wrap">
+      <img src="https://cdn-icons-png.flaticon.com/512/2921/2921222.png" alt="Logo">
+      <h1>SỔ TAY NHIỆM VỤ TRỰC TUYẾN</h1>
+    </div>
+  </header>
+
+  <!-- Body (centered) -->
+  <main>
+    <div class="form-box">
+      <h2>Đăng Nhập</h2>
+      <form onsubmit="return loginUser(event)">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="password" placeholder="Mật khẩu" required>
+        <button type="submit">Đăng Nhập</button>
+      </form>
+      <p>Chưa có tài khoản? <a href="/register.html">Đăng ký ngay</a></p>
+    </div>
   </main>
-  <script src="login.js"></script> </body>
+
+  <!-- Footer (sticks to bottom) -->
+  <footer>
+    <div class="wrap">
+      <div>
+        <h4>Thông tin</h4>
+        <p>Học sinh: <strong>Võ Nhật Vương</strong></p>
+        <p>Trường THPT Hàm Thuận Nam</p>
+      </div>
+      <div>
+        <h4>Liên hệ trường</h4>
+        <p>Địa chỉ: Hàm Thuận Nam, Bình Thuận</p>
+        <p>Email: <a href="mailto:c3hamthuannam.binhthuan@moet.edu.vn">c3hamthuannam.binhthuan@moet.edu.vn</a></p>
+        <p>Website: <a href="https://thpthamthuannam.edu.vn">thpthamthuannam.edu.vn</a></p>
+      </div>
+    </div>
+  </footer>
+  <script> src="login.js"</script>
+</body>
 </html>
