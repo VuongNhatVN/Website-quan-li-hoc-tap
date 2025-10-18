@@ -28,7 +28,7 @@ cron.schedule('* * * * *', async () => {
             if (user && user.pushSubscription) {
                 const payload = JSON.stringify({
                     title: '🔔 Nhắc nhở nhiệm vụ!',
-                    body: `Nhiệm vụ "${task.title}" sắp đến hạn.`
+                    body: `Nhiệm vụ "${task.title}" còn ${minutesLeft} nữa sẽ hết hạn.`
                 });
                 
                 // Gửi thông báo

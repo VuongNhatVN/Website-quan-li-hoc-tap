@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const permission = Notification.permission;
-        avigator.serviceWorker.ready.then(reg => {
+        navigator.serviceWorker.ready.then(reg => {
              reg.pushManager.getSubscription().then(subscription => {
                 if (subscription) {
                     enableNotificationsBtn.textContent = 'Thông báo đã bật ✅';
