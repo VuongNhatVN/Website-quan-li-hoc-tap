@@ -9,7 +9,11 @@
 <body>
   <main class="app-container">
     <h1>📝 Sổ tay Nhiệm vụ</h1>
-    <button id="logout-btn" class="logout-button">Đăng xuất</button>
+    <div class="header-buttons">
+      <button id="enable-notifications-btn" class="secondary-button">Bật thông báo 🔔</button>
+      <button id="logout-btn" class="logout-button">Đăng xuất</button>
+    </div>
+    </main>
 
     <form id="add-task-form" class="task-form">
       <input type="text" id="task-title" placeholder="Tiêu đề nhiệm vụ..." required>
@@ -22,7 +26,6 @@
     <ul id="task-list" class="task-list">
       </ul>
   </main>
-
   <script src="script.js"></script>
   <div id="task-due-modal" class="modal">
       <div class="modal-content">
