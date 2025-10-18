@@ -3,9 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
     if (!token) {
         window.location.href = '/login.html';
-        return;
+        return; // Dừng thực thi nếu chưa đăng nhập
     }
 
+    // Lấy các phần tử HTML
     const taskForm = document.getElementById('add-task-form');
     const taskTitleInput = document.getElementById('task-title');
     const taskDueDateInput = document.getElementById('task-due-date');
@@ -15,11 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
 
     const API_URL = '/api/tasks';
-    let localTasks = [];
+    let localTasks = []; // Biến toàn cục để lưu trữ danh sách nhiệm vụ
 
     // === PHẦN 2: CÁC HÀM HIỂN THỊ VÀ LẤY DỮ LIỆU ===
     const displayTasks = (tasks) => {
-        localTasks = tasks;
+        localTasks = tasks; // Cập nhật danh sách nhiệm vụ vào biến toàn cục
         taskList.innerHTML = '';
         tasks.forEach(task => {
             const taskItem = document.createElement('li');
@@ -59,18 +60,114 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // === PHẦN 3: CÁC HÀM XỬ LÝ SỰ KIỆN ===
-    taskForm.addEventListener('submit', async (event) => { /* ... code không đổi ... */ });
-    taskList.addEventListener('click', async (event) => { /* ... code không đổi ... */ });
-    logoutBtn.addEventListener('click', () => { /* ... code không đổi ... */ });
+    // === PHẦN 3: CÁC HÀM XỬ LÝ SỰ KIỆN (FORM, CLICK, ...) ===
+    taskForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const title = taskTitleInput.value;
+        const date = taskDueDateInput.value;
+        const time = taskDueTimeInput.value;
+        if (!title || !date || !time) return alert('Vui lòng nhập đầy đủ thông tin!');
+        const dueDate = new Date(`${date}T${time}`);
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ title, dueDate: dueDate.toISOString() }),
+            });
+            if (response.ok) {
+                taskForm.reset();
+                fetchTasks();
+            } else {
+                alert('Thêm nhiệm vụ thất bại!');
+            }
+        } catch (error) {
+            console.error('Lỗi khi thêm nhiệm vụ:', error);
+        }
+    });
 
-    // === PHẦN 4: LOGIC PUSH NOTIFICATIONS ===
-    function urlBase64ToUint8Array(base64String) { /* ... code không đổi ... */ }
-    async function subscribeUserToPush() { /* ... code không đổi ... */ }
-    function initializePushNotifications() { /* ... code không đổi ... */ }
+    taskList.addEventListener('click', async (event) => {
+        const target = event.target;
+        const taskItem = target.closest('.task-item');
+        if (!taskItem) return;
+        const taskId = taskItem.dataset.id;
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
+        if (target.classList.contains('delete-btn')) {
+            try {
+                const response = await fetch(`${API_URL}/${taskId}`, { method: 'DELETE', headers });
+                if (response.ok) fetchTasks(); else alert('Xóa thất bại!');
+            } catch (error) { console.error('Lỗi khi xóa:', error); }
+        }
+        if (target.classList.contains('complete-btn')) {
+            try {
+                const isCompleted = !taskItem.classList.contains('completed');
+                const response = await fetch(`${API_URL}/${taskId}`, { method: 'PATCH', headers, body: JSON.stringify({ isCompleted }) });
+                if (response.ok) fetchTasks(); else alert('Cập nhật thất bại!');
+            } catch (error) { console.error('Lỗi khi cập nhật:', error); }
+        }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('token');
+        window.location.href = '/login.html';
+    });
+
+    // === PHẦN 4: LOGIC PUSH NOTIFICATIONS (Gửi thông báo khi đã đóng web) ===
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
+        return outputArray;
+    }
+
+    async function subscribeUserToPush() {
+        try {
+            const swRegistration = await navigator.serviceWorker.register('/sw.js');
+            const response = await fetch('/api/push/vapid-public-key');
+            const vapidPublicKey = await response.text();
+            const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+            const subscription = await swRegistration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey
+            });
+            await fetch('/api/push/subscribe', {
+                method: 'POST',
+                body: JSON.stringify(subscription),
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+            });
+            enableNotificationsBtn.textContent = 'Thông báo đã bật ✅';
+            enableNotificationsBtn.disabled = true;
+        } catch (error) {
+            console.error('Lỗi khi đăng ký push notification:', error);
+            enableNotificationsBtn.textContent = 'Lỗi! Thử lại 🚫';
+            enableNotificationsBtn.disabled = false;
+        }
+    }
+
+    function initializePushNotifications() {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            enableNotificationsBtn.textContent = 'Trình duyệt không hỗ trợ 🚫';
+            enableNotificationsBtn.disabled = true;
+            return;
+        }
+        navigator.serviceWorker.ready.then(reg => {
+            reg.pushManager.getSubscription().then(subscription => {
+                if (subscription) {
+                    enableNotificationsBtn.textContent = 'Thông báo đã bật ✅';
+                    enableNotificationsBtn.disabled = true;
+                } else {
+                    enableNotificationsBtn.textContent = 'Bật thông báo 🔔';
+                    enableNotificationsBtn.disabled = false;
+                }
+            });
+        });
+    }
+
     enableNotificationsBtn.addEventListener('click', () => { subscribeUserToPush(); });
 
-    // === PHẦN 5: POP-UP VÀ ÂM THANH TRÊN WEB ===
+    // === PHẦN 5: POP-UP VÀ ÂM THANH TRÊN WEB (Chỉ hoạt động khi đang mở web) ===
     const notificationSound = document.getElementById('notification-sound');
     const taskModal = document.getElementById('task-due-modal');
     const modalTaskTitle = document.getElementById('modal-task-title');
@@ -91,13 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.target == taskModal) { closeModal(); }
     });
 
-    // SỬA LỖI: Thêm "cổng bảo vệ" vào đây
     function checkTasksForClientSideAlerts() {
-        // Nếu không có nhiệm vụ nào, dừng lại ngay lập tức
-        if (localTasks.length === 0) {
-            return;
-        }
-
         const now = new Date();
         const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
 
@@ -106,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dueDate = new Date(task.dueDate);
             if (isNaN(dueDate.getTime())) return;
             if (dueDate <= now && dueDate > oneMinuteAgo) {
+                console.log(`Client-side: Task "${task.title}" đã đến hạn! Hiển thị pop-up.`);
                 notificationSound.play().catch(e => console.error("Lỗi phát âm thanh:", e));
                 openModal(task.title);
                 clientSideCheckedTasks.push(task._id);
@@ -116,5 +208,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // === PHẦN CUỐI: KHỞI CHẠY BAN ĐẦU ===
     fetchTasks();
     initializePushNotifications();
-    setInterval(checkTasksForClientSideAlerts, 30000);
+    setInterval(checkTasksForClientSideAlerts, 30000); // Bắt đầu bộ đếm giờ của trình duyệt, kiểm tra mỗi 30 giây
 });
