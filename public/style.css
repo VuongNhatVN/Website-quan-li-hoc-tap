@@ -147,3 +147,54 @@ h1, h2 {
   color: #34495e;
   margin-right: 15px; /* Tạo khoảng cách với nút bên cạnh */
 }
+@media (max-width: 768px) {
+  
+  body {
+    padding-top: 20px; /* Giảm khoảng cách đệm ở trên cùng */
+  }
+
+  .app-container {
+    padding: 20px; /* Giảm khoảng cách đệm bên trong container */
+    margin: 0 10px; /* Thêm một chút lề ngang để không bị dính sát cạnh */
+  }
+
+  /* Thay đổi bố cục của form thêm nhiệm vụ */
+  .task-form {
+    flex-direction: column; /* Xếp các ô nhập liệu theo chiều dọc */
+    align-items: stretch; /* Kéo dài các ô cho bằng nhau */
+  }
+
+  .task-form button {
+    margin-top: 10px; /* Thêm khoảng cách cho nút bấm */
+  }
+
+  /* Điều chỉnh bố cục của các nút ở header */
+  .header-buttons {
+    flex-direction: column; /* Xếp theo chiều dọc */
+    align-items: flex-end; /* Căn lề về bên phải */
+    gap: 8px;
+  }
+  
+  .user-greeting {
+    margin-right: 0; /* Bỏ lề phải của lời chào */
+  }
+}
+
+/* Áp dụng cho màn hình có chiều rộng tối đa là 480px (điện thoại di động) */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.8em; /* Giảm cỡ chữ tiêu đề chính */
+  }
+  
+  .task-item {
+    flex-direction: column; /* Xếp nội dung nhiệm vụ theo chiều dọc */
+    align-items: flex-start; /* Căn lề về bên trái */
+    gap: 10px;
+  }
+
+  .task-actions button {
+    padding: 8px 12px; /* Tăng kích thước nút bấm cho dễ nhấn hơn */
+    margin-left: 0;
+    margin-right: 10px; /* Tạo khoảng cách giữa các nút */
+  }
+}
