@@ -2,11 +2,52 @@
 require('dotenv').config(); // Nạp các biến môi trường từ file .env
 const express = require('express');
 const mongoose = require('mongoose'); // Thêm mongoose
+const webpush = require('web-push');
+const cron = require('node-cron');
+const Task = require('./models/Task');
+const User = require('./models/User');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const taskRoutes = require('./routes/taskRoutes');
 const authRoutes = require('./routes/authRoutes');
+
+cron.schedule('* * * * *', async () => {
+    console.log(`[${new Date().toLocaleTimeString()}] Cron job: Đang kiểm tra các nhiệm vụ...`);
+    
+    try {
+        const now = new Date();
+        // Tìm các nhiệm vụ sắp đến hạn trong 15 phút tới
+        const upcomingTasks = await Task.find({
+            isCompleted: false,
+            dueDate: { $lte: new Date(now.getTime() + 15 * 60 * 1000), $gt: now }
+        });
+
+        for (const task of upcomingTasks) {
+            const user = await User.findById(task.user);
+            if (user && user.pushSubscription) {
+                const payload = JSON.stringify({
+                    title: '🔔 Nhắc nhở nhiệm vụ!',
+                    body: `Nhiệm vụ "${task.title}" sắp đến hạn.`
+                });
+                
+                // Gửi thông báo
+                await webpush.sendNotification(user.pushSubscription, payload);
+                console.log(`Đã gửi thông báo cho task: ${task.title}`);
+            }
+        }
+    } catch (error) {
+        console.error('Lỗi trong cron job:', error);
+    }
+});
+
+webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+);
+const pushRoutes = require('./routes/pushRoutes');
+app.use('/api/push', pushRoutes);
 
 app.use(express.json());
 app.use(express.static('public'));

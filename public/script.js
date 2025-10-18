@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskModal = document.getElementById('task-due-modal');
     const modalTaskTitle = document.getElementById('modal-task-title');
     const closeModalBtn = document.querySelector('.close-btn');
-
+    
     const API_URL = '/api/tasks';
     let notificationIntervalId = null;
     let localTasks = [];
@@ -116,6 +116,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // === PHẦN 7: LOGIC THÔNG BÁO & MODAL ===
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+    async function subscribeUserToPush() {
+        try {
+            // 1. Đăng ký Service Worker
+            const swRegistration = await navigator.serviceWorker.register('/sw.js');
+            console.log('Service Worker đã đăng ký:', swRegistration);
+
+            // 2. Lấy VAPID Public Key từ server
+            const response = await fetch('/api/push/vapid-public-key');
+            const vapidPublicKey = await response.text();
+            const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+            // 3. Đăng ký nhận push và lấy subscription
+            const subscription = await swRegistration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey
+            });
+            console.log('Đã nhận subscription:', subscription);
+
+            // 4. Gửi subscription về backend để lưu lại
+            await fetch('/api/push/subscribe', {
+                method: 'POST',
+                body: JSON.stringify(subscription),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            console.log('Đã gửi subscription về server.');
+            
+            enableNotificationsBtn.textContent = 'Thông báo đã bật ✅';
+            enableNotificationsBtn.disabled = true;
+
+        } catch (error) {
+            console.error('Lỗi khi đăng ký push notification:', error);
+            enableNotificationsBtn.textContent = 'Lỗi! Thử lại 🚫';
+            enableNotificationsBtn.disabled = false;
+        }
+    }
     function openModal(taskTitle) {
         modalTaskTitle.textContent = `"${taskTitle}"`;
         taskModal.style.display = 'flex';
@@ -189,35 +237,38 @@ document.addEventListener('DOMContentLoaded', () => {
     function markAsNotified(taskId, type) { /* ... */ }
     function hasBeenNotified(taskId, type) { /* ... */ }
     function initializeNotifications() {
-        if (!("Notification" in window)) {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            console.warn('Push messaging is not supported');
             enableNotificationsBtn.textContent = 'Trình duyệt không hỗ trợ 🚫';
             enableNotificationsBtn.disabled = true;
             return;
         }
 
         const permission = Notification.permission;
-        if (permission === 'granted') {
-            enableNotificationsBtn.textContent = 'Thông báo đã bật ✅';
-            enableNotificationsBtn.disabled = true;
-            if (notificationIntervalId) clearInterval(notificationIntervalId);
-            notificationIntervalId = setInterval(checkTasksForNotification, 60000);
-        } else if (permission === 'denied') {
-            enableNotificationsBtn.textContent = 'Thông báo đã bị chặn 🚫';
-            enableNotificationsBtn.disabled = true;
-            alert('Bạn đã chặn quyền gửi thông báo. Vui lòng vào cài đặt của trình duyệt để cho phép.');
-        } else { // 'default'
-            enableNotificationsBtn.textContent = 'Bật thông báo 🔔';
-            enableNotificationsBtn.disabled = false;
-        }
-    }
-    enableNotificationsBtn.addEventListener('click', () => {
-        // Chỉ hỏi quyền nếu trạng thái là 'default'
-        if (Notification.permission === 'default') {
-            Notification.requestPermission().then(permission => {
-                // Sau khi người dùng chọn, cập nhật lại trạng thái nút và bộ đếm
-                initializeNotifications();
+        avigator.serviceWorker.ready.then(reg => {
+             reg.pushManager.getSubscription().then(subscription => {
+                if (subscription) {
+                    enableNotificationsBtn.textContent = 'Thông báo đã bật ✅';
+                    enableNotificationsBtn.disabled = true;
+                    //if (notificationIntervalId) clearInterval(notificationIntervalId);
+            //notificationIntervalId = setInterval(checkTasksForNotification, 60000);
+                } else {
+                    enableNotificationsBtn.textContent = 'Bật thông báo 🔔';
+                    enableNotificationsBtn.disabled = false;
+                }
             });
-        }
+        });
+    }
+    
+    enableNotificationsBtn.addEventListener('click', () => {
+        subscribeUserToPush();
+        // Chỉ hỏi quyền nếu trạng thái là 'default'
+        //if (Notification.permission === 'default') {
+            //Notification.requestPermission().then(permission => {
+                // Sau khi người dùng chọn, cập nhật lại trạng thái nút và bộ đếm
+                //initializeNotifications();
+            //});
+        //}
     });
     // === PHẦN CUỐI: KHỞI CHẠY BAN ĐẦU ===
     fetchTasks();

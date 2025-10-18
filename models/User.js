@@ -11,6 +11,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Mật khẩu là bắt buộc'],
   },
+  pushSubscription: {
+    type: Object,
+    default: null
+  },
 }, { timestamps: true });
-
 module.exports = mongoose.model('User', userSchema);
