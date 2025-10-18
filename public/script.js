@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function showCustomNotification(taskTitle, type) {
         let bodyText = '';
-        if (type === 'upcoming') { bodyText = `Nhiệm vụ "${taskTitle}" sẽ hết hạn trong 15 phút nữa!`; }
+        if (type === 'upcoming') { bodyText = `Nhiệm vụ "${taskTitle}" sẽ hết hạn trong ${minutesLeft} phút nữa!`; }
         else if (type === 'due') { bodyText = `Đã đến hạn hoàn thành nhiệm vụ "${taskTitle}"!`; }
         
         // Phát âm thanh
@@ -144,21 +144,30 @@ document.addEventListener('DOMContentLoaded', () => {
     function hasBeenNotified(taskId, type) { /* ... */ }
     function checkTasksForNotification() {
         const now = new Date();
-        const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
-        const oneMinuteAgo = new Date(now.getTime() - 60);
+        const oneMinuteAgo = new Date(now.getTime() - 1 * 1000);
+
         localTasks.forEach(task => {
             if (task.isCompleted) return;
+
             const dueDate = new Date(task.dueDate);
-            if (dueDate > now && dueDate <= fifteenMinutesFromNow) {
+            
+            // Tính toán khoảng cách thời gian bằng mili giây
+            const timeDiff = dueDate.getTime() - now.getTime();
+
+            // 1. Kiểm tra thông báo "Sắp đến hạn" (dưới 15 phút và lớn hơn 0)
+            if (timeDiff > 0 && timeDiff <= 15 * 60 * 1000) {
                 if (!hasBeenNotified(task._id, 'upcoming')) {
-                    showNotification(task.title, 'upcoming');
+                    // Chuyển đổi mili giây thành phút và làm tròn
+                    const minutesLeft = Math.round(timeDiff / (1000 * 60));
+                    // Truyền số phút vào hàm thông báo
+                    showCustomNotification(task.title, 'upcoming', minutesLeft);
                     markAsNotified(task._id, 'upcoming');
-                    showCustomNotification(task.title, 'upcoming');
                 }
             }
+
+            // 2. Kiểm tra thông báo "Đã đến hạn" (trong vòng 1 phút vừa qua)
             if (dueDate <= now && dueDate > oneMinuteAgo) {
                 if (!hasBeenNotified(task._id, 'due')) {
-                    showNotification(task.title, 'due');
                     showCustomNotification(task.title, 'due');
                     openModal(task.title);
                     markAsNotified(task._id, 'due');
