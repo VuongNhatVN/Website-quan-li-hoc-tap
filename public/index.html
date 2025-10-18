@@ -7,16 +7,17 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <main class="app-container">
     <h1>📝 Sổ tay Nhiệm vụ</h1>
+    <button id="logout-btn" class="logout-button">Đăng xuất</button>
 
     <form id="add-task-form" class="task-form">
       <input type="text" id="task-title" placeholder="Tiêu đề nhiệm vụ..." required>
       <input type="date" id="task-due-date" required>
+      <input type="time" id="task-due-time" required>
       <button type="submit">Thêm Nhiệm Vụ</button>
     </form>
-    <button id="logout-btn">Đăng xuất</button>
+
     <h2>Danh sách cần làm</h2>
     <ul id="task-list" class="task-list">
       </ul>
