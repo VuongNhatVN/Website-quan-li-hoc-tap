@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === PHẦN 2: CÁC HÀM HIỂN THỊ VÀ LẤY DỮ LIỆU ===
     const displayTasks = (tasks) => {
-        localTasks = tasks; // Cập nhật danh sách nhiệm vụ vào biến toàn cục
+        localTasks = tasks;
         taskList.innerHTML = '';
         tasks.forEach(task => {
             const taskItem = document.createElement('li');
@@ -187,8 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('click', (event) => {
         if (event.target == taskModal) { closeModal(); }
     });
-
     function checkTasksForClientSideAlerts() {
+        // Nếu không có nhiệm vụ nào, dừng lại ngay lập tức
+        if (localTasks.length === 0) {
+            return;
+        }
+        
         const now = new Date();
         const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
 
