@@ -23,6 +23,10 @@ const taskSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  notified: {
+    type: Object,
+    default: { upcoming: false, due: false }
   }
 }, { timestamps: true }); // Tự động thêm 2 trường createdAt và updatedAt
 // "Biên dịch" bản thiết kế thành một Model (Mô hình)
