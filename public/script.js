@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskDueTimeInput = document.getElementById('task-due-time');
     const taskList = document.getElementById('task-list');
     const logoutBtn = document.getElementById('logout-btn');
-    const enableNotificationsBtn = document.getElementById('enable-notifications-btn')
+    const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
+    const notificationSound = document.getElementById('notification-sound');
     const taskModal = document.getElementById('task-due-modal');
     const modalTaskTitle = document.getElementById('modal-task-title');
     const closeModalBtn = document.querySelector('.close-btn');
@@ -122,6 +123,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeModal() {
         taskModal.style.display = 'none';
     }
+    function showCustomNotification(taskTitle, type) {
+        let bodyText = '';
+        if (type === 'upcoming') { bodyText = `Nhiệm vụ "${taskTitle}" sẽ hết hạn trong 15 phút nữa!`; }
+        else if (type === 'due') { bodyText = `Đã đến hạn hoàn thành nhiệm vụ "${taskTitle}"!`; }
+        
+        // Phát âm thanh
+        notificationSound.play().catch(error => console.log("Lỗi phát âm thanh:", error));
+
+        // Hiển thị thông báo trình duyệt
+        new Notification('🔔 Nhắc nhở nhiệm vụ!', { body: bodyText, icon: '...' });
+    }
     closeModalBtn.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => {
         if (event.target == taskModal) { closeModal(); }
@@ -133,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function checkTasksForNotification() {
         const now = new Date();
         const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
-        const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
+        const oneMinuteAgo = new Date(now.getTime() - 60);
         localTasks.forEach(task => {
             if (task.isCompleted) return;
             const dueDate = new Date(task.dueDate);
@@ -141,11 +153,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!hasBeenNotified(task._id, 'upcoming')) {
                     showNotification(task.title, 'upcoming');
                     markAsNotified(task._id, 'upcoming');
+                    showCustomNotification(task.title, 'upcoming');
                 }
             }
             if (dueDate <= now && dueDate > oneMinuteAgo) {
                 if (!hasBeenNotified(task._id, 'due')) {
                     showNotification(task.title, 'due');
+                    showCustomNotification(task.title, 'due');
                     openModal(task.title);
                     markAsNotified(task._id, 'due');
                 }
@@ -154,34 +168,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function initializeNotifications() {
-        console.log('Kiểm tra quyền thông báo...');
-        // Nếu đã có quyền, bật bộ đếm giờ ngay lập tức
-        if (Notification.permission === 'granted') {
-            console.log('Đã có quyền! Bắt đầu kiểm tra nhiệm vụ.');
+        if (!("Notification" in window)) {
+            enableNotificationsBtn.textContent = 'Trình duyệt không hỗ trợ 🚫';
+            enableNotificationsBtn.disabled = true;
+            return;
+        }
+
+        const permission = Notification.permission;
+        if (permission === 'granted') {
             enableNotificationsBtn.textContent = 'Thông báo đã bật ✅';
             enableNotificationsBtn.disabled = true;
-            // Xóa bộ đếm cũ nếu có và tạo bộ đếm mới
             if (notificationIntervalId) clearInterval(notificationIntervalId);
             notificationIntervalId = setInterval(checkTasksForNotification, 60000);
-        } else if (Notification.permission === 'denied') {
-            console.log('Quyền thông báo đã bị chặn.');
+        } else if (permission === 'denied') {
             enableNotificationsBtn.textContent = 'Thông báo đã bị chặn 🚫';
             enableNotificationsBtn.disabled = true;
-        } else {
-            console.log('Chưa có quyền, đang chờ người dùng nhấn nút.');
+            alert('Bạn đã chặn quyền gửi thông báo. Vui lòng vào cài đặt của trình duyệt để cho phép.');
+        } else { // 'default'
+            enableNotificationsBtn.textContent = 'Bật thông báo 🔔';
+            enableNotificationsBtn.disabled = false;
         }
     }
     enableNotificationsBtn.addEventListener('click', () => {
-        // Hỏi xin quyền khi người dùng nhấn nút
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                console.log('Người dùng đã cấp quyền!');
-                // Sau khi có quyền, gọi lại hàm khởi tạo để bật bộ đếm
-                initializeNotifications(); 
-            } else {
-                console.log('Người dùng không cấp quyền.');
-            }
-        });
+        // Chỉ hỏi quyền nếu trạng thái là 'default'
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then(permission => {
+                // Sau khi người dùng chọn, cập nhật lại trạng thái nút và bộ đếm
+                initializeNotifications();
+            });
+        }
     });
     // === PHẦN CUỐI: KHỞI CHẠY BAN ĐẦU ===
     fetchTasks();
