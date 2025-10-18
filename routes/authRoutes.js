@@ -7,7 +7,11 @@ const User = require('../models/User'); // Nhập User model
 // === ĐĂNG KÝ (REGISTER) ===
 router.post('/register', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { fullName, email, password, confirmPassword } = req.body;
+    //0. Kiểm tra nhập lại mật khẩu
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Mật khẩu nhập lại không khớp' });
+    }
 
     // 1. Kiểm tra người dùng đã tồn tại chưa
     let user = await User.findOne({ email });
@@ -20,7 +24,7 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // 3. Tạo người dùng mới và lưu vào DB
-    user = new User({ email, password: hashedPassword });
+    user = new User({ fullName, email, password: hashedPassword });
     await user.save();
 
     res.status(201).json({ message: 'Đăng ký thành công!' });
@@ -55,7 +59,10 @@ router.post('/login', async (req, res) => {
       { expiresIn: '1h' } // Token hết hạn sau 1 giờ
     );
 
-    res.json({ token });
+    res.json({
+      token,
+      fullName: user.fullName
+    });
 
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server' });

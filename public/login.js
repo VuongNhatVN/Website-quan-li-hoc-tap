@@ -19,6 +19,7 @@ loginForm.addEventListener('submit', async (e) => {
     if (res.ok) {
       // Lưu token vào "ví" của trình duyệt (localStorage)
       localStorage.setItem('token', data.token);
+      localStorage.setItem('fullName', data.fullName);
       // Chuyển hướng đến trang chính
       window.location.href = '/index.html';
     } else {

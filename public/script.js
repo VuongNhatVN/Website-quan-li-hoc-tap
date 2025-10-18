@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskList = document.getElementById('task-list');
     const logoutBtn = document.getElementById('logout-btn');
     const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
+    const userFullNameSpan = document.getElementById('user-fullname');
+
+    // Xin chào người dùng
+    const fullName = localStorage.getItem('fullName');
+    if (fullName) {
+        userFullNameSpan.textContent = `Xin chào, ${fullName}!`;
+    }
 
     const API_URL = '/api/tasks';
     let localTasks = []; // Biến toàn cục để lưu trữ danh sách nhiệm vụ

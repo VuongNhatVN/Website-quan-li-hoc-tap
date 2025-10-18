@@ -1,18 +1,26 @@
 // Lấy các phần tử HTML từ form
 const registerForm = document.getElementById('register-form');
+const fullNameInput = document.getElementById('fullName');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
+const confirmPasswordInput = document.getElementById('confirmPassword');
 
 // Thêm sự kiện 'submit' cho form
 registerForm.addEventListener('submit', async (event) => {
   // Ngăn chặn hành vi mặc định của form là tải lại trang
   event.preventDefault();
 
-  // Lấy giá trị email và mật khẩu người dùng nhập vào
+  // Lấy tất cả
+  const fullName = fullNameInput.value;
   const email = emailInput.value;
   const password = passwordInput.value;
+  const confirmPassword = confirmPasswordInput.value;
 
   // Kiểm tra cơ bản
+  if (password !== confirmPassword) {
+    alert('Mật khẩu nhập lại không khớp!');
+    return;
+  }
   if (!email || !password) {
     alert('Vui lòng nhập đầy đủ email và mật khẩu.');
     return;
@@ -26,7 +34,7 @@ registerForm.addEventListener('submit', async (event) => {
         'Content-Type': 'application/json',
       },
       // Chuyển đổi dữ liệu JavaScript thành chuỗi JSON
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ fullName, email, password, confirmPassword }),
     });
 
     // Lấy dữ liệu JSON từ phản hồi của server
