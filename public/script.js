@@ -1,149 +1,93 @@
-// === PHẦN 0: KIỂM TRA XÁC THỰC & LẤY TOKEN ===
+// === PHẦN 0 & 1 (Không đổi) ===
 const token = localStorage.getItem('token');
-if (!token) {
-    window.location.href = '/login.html';
-}
+if (!token) { window.location.href = '/login.html'; }
 
-// === PHẦN 1: LẤY CÁC ĐỐI TƯỢNG HTML ===
 const taskForm = document.getElementById('add-task-form');
 const taskTitleInput = document.getElementById('task-title');
-const taskDueDateInput = document.getElementById('task-due-date');
-const taskDueTimeInput = document.getElementById('task-due-time'); // Input mới
-const taskList = document.getElementById('task-list');
+// ... (các biến const khác không đổi) ...
 const logoutBtn = document.getElementById('logout-btn');
 
+// MỚI: Lấy các phần tử của Modal
+const taskModal = document.getElementById('task-due-modal');
+const modalTaskTitle = document.getElementById('modal-task-title');
+const closeModalBtn = document.querySelector('.close-btn');
+
 const API_URL = '/api/tasks';
+let localTasks = [];
 
-// === PHẦN 2: HÀM HIỂN THỊ NHIỆM VỤ ===
-const displayTasks = (tasks) => {
-    taskList.innerHTML = ''; // Xóa sạch danh sách cũ
-    tasks.forEach(task => {
-        const taskItem = document.createElement('li');
-        taskItem.classList.add('task-item');
-        if (task.isCompleted) {
-            taskItem.classList.add('completed');
+// === PHẦN 2, 3, 4, 5, 6 (Không đổi) ===
+// displayTasks, fetchTasks, các event listener cho form, taskList, logoutBtn
+// Em hãy copy và dán các hàm không đổi từ file cũ của mình vào đây.
+// ...
+
+// MỚI: ==========================================================
+// === PHẦN 7: LOGIC THÔNG BÁO & MODAL ==========================
+// ==========================================================
+
+// MỚI: Hàm để mở và đóng Modal
+function openModal(taskTitle) {
+    modalTaskTitle.textContent = `"${taskTitle}"`;
+    taskModal.style.display = 'flex'; // Hiện modal
+}
+
+function closeModal() {
+    taskModal.style.display = 'none'; // Ẩn modal
+}
+
+// MỚI: Thêm sự kiện để đóng modal
+closeModalBtn.addEventListener('click', closeModal);
+window.addEventListener('click', (event) => {
+    if (event.target == taskModal) { // Nếu người dùng click ra ngoài vùng nội dung
+        closeModal();
+    }
+});
+
+
+// Hàm hiển thị thông báo trình duyệt (không đổi)
+function showNotification(taskTitle, type) { /* ... code không đổi ... */ }
+
+// Hệ thống ghi nhớ trạng thái thông báo (không đổi)
+function markAsNotified(taskId, type) { /* ... code không đổi ... */ }
+function hasBeenNotified(taskId, type) { /* ... code không đổi ... */ }
+
+// CẬP NHẬT: Hàm kiểm tra nhiệm vụ sẽ gọi thêm hàm mở Modal
+function checkTasksForNotification() {
+    const now = new Date();
+    const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
+    const oneMinuteAgo = new Date(now.getTime());
+
+    localTasks.forEach(task => {
+        if (task.isCompleted) return;
+
+        const dueDate = new Date(task.dueDate);
+
+        // 1. Kiểm tra thông báo "Sắp đến hạn" (trước 15 phút)
+        if (dueDate > now && dueDate <= fifteenMinutesFromNow) {
+            if (!hasBeenNotified(task._id, 'upcoming')) {
+                showNotification(task.title, 'upcoming');
+                markAsNotified(task._id, 'upcoming');
+            }
         }
-        taskItem.dataset.id = task._id;
 
-        // CẬP NHẬT: Định dạng lại ngày và giờ cho dễ đọc
-        const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-        const formattedDate = new Date(task.dueDate).toLocaleString('vi-VN', options);
-
-        taskItem.innerHTML = `
-            <div class="task-info">
-                <strong>${task.title}</strong>
-                <p>Hạn chót: ${formattedDate}</p>
-            </div>
-            <div class="task-actions">
-                <button class="complete-btn">${task.isCompleted ? 'Hoàn tác' : 'Hoàn thành'}</button>
-                <button class="delete-btn">Xóa</button>
-            </div>
-        `;
-        taskList.appendChild(taskItem);
+        // 2. Kiểm tra thông báo "Đã đến hạn"
+        if (dueDate <= now && dueDate > oneMinuteAgo) {
+            if (!hasBeenNotified(task._id, 'due')) {
+                // Gửi thông báo trình duyệt như cũ
+                showNotification(task.title, 'due');
+                // MỞ CỬA SỔ POP-UP TRÊN TRANG WEB
+                openModal(task.title);
+                // Ghi nhớ đã thông báo
+                markAsNotified(task._id, 'due');
+            }
+        }
     });
-};
+}
 
-// === PHẦN 3: HÀM LẤY DỮ LIỆU TỪ BACKEND ===
-const fetchTasks = async () => {
-    try {
-        const response = await fetch(API_URL, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.status === 401) {
-            localStorage.removeItem('token');
-            window.location.href = '/login.html';
-            return;
-        }
-        const tasks = await response.json();
-        displayTasks(tasks);
-    } catch (error) {
-        console.error('Lỗi khi tải danh sách nhiệm vụ:', error);
-    }
-};
+// Hàm khởi tạo tính năng thông báo (không đổi)
+function initializeNotifications() { /* ... code không đổi ... */ }
 
-// === PHẦN 4: HÀM THÊM NHIỆM VỤ MỚI ===
-taskForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    const title = taskTitleInput.value;
-    const date = taskDueDateInput.value;
-    const time = taskDueTimeInput.value; // Lấy giá trị giờ
-
-    if (!title || !date || !time) {
-        return alert('Vui lòng nhập đầy đủ thông tin!');
-    }
-
-    // CẬP NHẬT: Kết hợp ngày và giờ thành một đối tượng Date hoàn chỉnh
-    const dueDate = new Date(`${date}T${time}`);
-
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ title, dueDate: dueDate.toISOString() }),
-        });
-        if (response.ok) {
-            taskForm.reset(); // Xóa sạch form
-            fetchTasks();
-        } else {
-            alert('Thêm nhiệm vụ thất bại!');
-        }
-    } catch (error) {
-        console.error('Lỗi khi thêm nhiệm vụ:', error);
-    }
+// === PHẦN CUỐI: Tải nhiệm vụ và khởi tạo thông báo ===
+document.addEventListener('DOMContentLoaded', () => {
+    fetchTasks();
+    initializeNotifications();
 });
-
-// === PHẦN 5: HÀM XÓA VÀ CẬP NHẬT NHIỆM VỤ ===
-taskList.addEventListener('click', async (event) => {
-    const target = event.target;
-    const taskItem = target.closest('.task-item');
-    if (!taskItem) return;
-
-    const taskId = taskItem.dataset.id;
-
-    // Xử lý nút Xóa
-    if (target.classList.contains('delete-btn')) {
-        try {
-            const response = await fetch(`${API_URL}/${taskId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` } // Gửi token
-            });
-            if (response.ok) fetchTasks();
-            else alert('Xóa thất bại!');
-        } catch (error) {
-            console.error('Lỗi khi xóa nhiệm vụ:', error);
-        }
-    }
-
-    // Xử lý nút Hoàn thành
-    if (target.classList.contains('complete-btn')) {
-        try {
-            const isCompleted = !taskItem.classList.contains('completed');
-            // ***** SỬA LỖI Ở ĐÂY *****
-            // Thêm Authorization header vào yêu cầu PATCH
-            const response = await fetch(`${API_URL}/${taskId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ isCompleted: isCompleted })
-            });
-            if (response.ok) fetchTasks();
-            else alert('Cập nhật thất bại!');
-        } catch (error) {
-            console.error('Lỗi khi cập nhật nhiệm vụ:', error);
-        }
-    }
-});
-
-// === PHẦN 6: ĐĂNG XUẤT & TẢI NHIỆM VỤ BAN ĐẦU ===
-logoutBtn.addEventListener('click', () => {
-    localStorage.removeItem('token');
-    window.location.href = '/login.html';
-});
-
-document.addEventListener('DOMContentLoaded', fetchTasks);
