@@ -1,13 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // === PHẦN 0: KIỂM TRA XÁC THỰC & LẤY TOKEN ===
+    // === PHẦN 1: KHỞI TẠO VÀ LẤY CÁC PHẦN TỬ HTML ===
     const token = localStorage.getItem('token');
     if (!token) {
         window.location.href = '/login.html';
         return; // Dừng thực thi nếu chưa đăng nhập
     }
 
-    // === PHẦN 1: LẤY CÁC ĐỐI TƯỢNG HTML ===
-    // Chuyển toàn bộ vào trong DOMContentLoaded
+    // Lấy các phần tử HTML
     const taskForm = document.getElementById('add-task-form');
     const taskTitleInput = document.getElementById('task-title');
     const taskDueDateInput = document.getElementById('task-due-date');
@@ -15,23 +14,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskList = document.getElementById('task-list');
     const logoutBtn = document.getElementById('logout-btn');
     const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
-    const notificationSound = document.getElementById('notification-sound');
-    const taskModal = document.getElementById('task-due-modal');
-    const modalTaskTitle = document.getElementById('modal-task-title');
-    const closeModalBtn = document.querySelector('.close-btn');
-    
-    const API_URL = '/api/tasks';
-    let notificationIntervalId = null;
-    let localTasks = [];
 
-    // === PHẦN 2: HÀM HIỂN THỊ NHIỆM VỤ ===
+    const API_URL = '/api/tasks';
+    let localTasks = []; // Biến toàn cục để lưu trữ danh sách nhiệm vụ
+
+    // === PHẦN 2: CÁC HÀM HIỂN THỊ VÀ LẤY DỮ LIỆU ===
     const displayTasks = (tasks) => {
-        localTasks = tasks;
+        localTasks = tasks; // Cập nhật danh sách nhiệm vụ vào biến toàn cục
         taskList.innerHTML = '';
         tasks.forEach(task => {
             const taskItem = document.createElement('li');
             taskItem.classList.add('task-item');
-            if (task.isCompleted) { taskItem.classList.add('completed'); }
+            if (task.isCompleted) {
+                taskItem.classList.add('completed');
+            }
             taskItem.dataset.id = task._id;
             const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
             const formattedDate = new Date(task.dueDate).toLocaleString('vi-VN', options);
@@ -49,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // === PHẦN 3: HÀM LẤY DỮ LIỆU TỪ BACKEND ===
     const fetchTasks = async () => {
         try {
             const response = await fetch(API_URL, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -60,10 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const tasks = await response.json();
             displayTasks(tasks);
-        } catch (error) { console.error('Lỗi khi tải danh sách nhiệm vụ:', error); }
+        } catch (error) {
+            console.error('Lỗi khi tải nhiệm vụ:', error);
+        }
     };
 
-    // === PHẦN 4: HÀM THÊM NHIỆM VỤ MỚI ===
+    // === PHẦN 3: CÁC HÀM XỬ LÝ SỰ KIỆN (FORM, CLICK, ...) ===
     taskForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const title = taskTitleInput.value;
@@ -80,178 +77,86 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 taskForm.reset();
                 fetchTasks();
-            } else { alert('Thêm nhiệm vụ thất bại!'); }
-        } catch (error) { console.error('Lỗi khi thêm nhiệm vụ:', error); }
+            } else {
+                alert('Thêm nhiệm vụ thất bại!');
+            }
+        } catch (error) {
+            console.error('Lỗi khi thêm nhiệm vụ:', error);
+        }
     });
 
-    // === PHẦN 5: HÀM XÓA VÀ CẬP NHẬT NHIỆM VỤ ===
     taskList.addEventListener('click', async (event) => {
         const target = event.target;
         const taskItem = target.closest('.task-item');
         if (!taskItem) return;
         const taskId = taskItem.dataset.id;
+        const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
         if (target.classList.contains('delete-btn')) {
             try {
-                const response = await fetch(`${API_URL}/${taskId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                const response = await fetch(`${API_URL}/${taskId}`, { method: 'DELETE', headers });
                 if (response.ok) fetchTasks(); else alert('Xóa thất bại!');
-            } catch (error) { console.error('Lỗi khi xóa nhiệm vụ:', error); }
+            } catch (error) { console.error('Lỗi khi xóa:', error); }
         }
         if (target.classList.contains('complete-btn')) {
             try {
                 const isCompleted = !taskItem.classList.contains('completed');
-                const response = await fetch(`${API_URL}/${taskId}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ isCompleted: isCompleted })
-                });
+                const response = await fetch(`${API_URL}/${taskId}`, { method: 'PATCH', headers, body: JSON.stringify({ isCompleted }) });
                 if (response.ok) fetchTasks(); else alert('Cập nhật thất bại!');
-            } catch (error) { console.error('Lỗi khi cập nhật nhiệm vụ:', error); }
+            } catch (error) { console.error('Lỗi khi cập nhật:', error); }
         }
     });
 
-    // === PHẦN 6: ĐĂNG XUẤT ===
     logoutBtn.addEventListener('click', () => {
         localStorage.removeItem('token');
         window.location.href = '/login.html';
     });
-    
-    // === PHẦN 7: LOGIC THÔNG BÁO & MODAL ===
+
+    // === PHẦN 4: LOGIC PUSH NOTIFICATIONS (Gửi thông báo khi đã đóng web) ===
     function urlBase64ToUint8Array(base64String) {
         const padding = '='.repeat((4 - base64String.length % 4) % 4);
         const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
         const rawData = window.atob(base64);
         const outputArray = new Uint8Array(rawData.length);
-        for (let i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
-        }
+        for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
         return outputArray;
     }
+
     async function subscribeUserToPush() {
         try {
-            // 1. Đăng ký Service Worker
             const swRegistration = await navigator.serviceWorker.register('/sw.js');
-            console.log('Service Worker đã đăng ký:', swRegistration);
-
-            // 2. Lấy VAPID Public Key từ server
             const response = await fetch('/api/push/vapid-public-key');
             const vapidPublicKey = await response.text();
             const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
-
-            // 3. Đăng ký nhận push và lấy subscription
             const subscription = await swRegistration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: convertedVapidKey
             });
-            console.log('Đã nhận subscription:', subscription);
-
-            // 4. Gửi subscription về backend để lưu lại
             await fetch('/api/push/subscribe', {
                 method: 'POST',
                 body: JSON.stringify(subscription),
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
             });
-            console.log('Đã gửi subscription về server.');
-            
             enableNotificationsBtn.textContent = 'Thông báo đã bật ✅';
             enableNotificationsBtn.disabled = true;
-
         } catch (error) {
             console.error('Lỗi khi đăng ký push notification:', error);
             enableNotificationsBtn.textContent = 'Lỗi! Thử lại 🚫';
             enableNotificationsBtn.disabled = false;
         }
     }
-    function openModal(taskTitle) {
-        modalTaskTitle.textContent = `"${taskTitle}"`;
-        taskModal.style.display = 'flex';
-    }
-    function closeModal() {
-        taskModal.style.display = 'none';
-    }
-    function showCustomNotification(taskTitle, type, minutesLeft = 0) {
-        let bodyText = '';
-        if (type === 'upcoming') { bodyText = `Nhiệm vụ "${taskTitle}" sẽ hết hạn trong ${minutesLeft} phút nữa!`; }
-        else if (type === 'due') { bodyText = `Đã đến hạn hoàn thành nhiệm vụ "${taskTitle}"!`; }
-        
-        // Phát âm thanh
-        notificationSound.play().catch(error => console.log("Lỗi phát âm thanh:", error));
 
-        // Hiển thị thông báo trình duyệt
-        new Notification('🔔 Nhắc nhở nhiệm vụ!', { body: bodyText, icon: '...' });
-    }
-    function checkTasksForNotification() {
-        console.log(`[${new Date().toLocaleTimeString()}] ===== Bắt đầu chu kỳ kiểm tra =====`);
-        const now = new Date();
-        const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
-
-        localTasks.forEach(task => {
-            const dueDate = new Date(task.dueDate);
-            if (isNaN(dueDate.getTime()) || task.isCompleted) return;
-
-            const timeDiff = dueDate.getTime() - now.getTime();
-            // Sử dụng Math.ceil để làm tròn lên, thân thiện hơn với người dùng
-            // Ví dụ: 14.1 phút sẽ là 15 phút.
-            const minutesLeft = Math.ceil(timeDiff / (1000 * 60));
-
-            // Log cho từng nhiệm vụ để dễ theo dõi
-            console.log(`-> Task: "${task.title}", Hạn: ${dueDate.toLocaleTimeString()}, Còn lại: ${minutesLeft} phút.`);
-
-            // 1. Kiểm tra thông báo "Sắp đến hạn" (dưới hoặc bằng 15 phút)
-            const isUpcoming = timeDiff > 0 && timeDiff <= 15 * 60 * 1000;
-            if (isUpcoming) {
-                console.log(`   - "${task.title}" là SẮP ĐẾN HẠN.`);
-                if (!hasBeenNotified(task._id, 'upcoming')) {
-                    console.log(`   - ✅ CHƯA THÔNG BÁO "upcoming". Đang gửi...`);
-                    showCustomNotification(task.title, 'upcoming', minutesLeft);
-                    markAsNotified(task._id, 'upcoming');
-                } else {
-                    console.log(`   - 💤 ĐÃ THÔNG BÁO "upcoming" trước đó.`);
-                }
-            }
-
-            // 2. Kiểm tra thông báo "Đã đến hạn" (trong vòng 1 phút qua)
-            const isDue = dueDate <= now && dueDate > oneMinuteAgo;
-            if (isDue) {
-                console.log(`   - "${task.title}" là ĐÃ ĐẾN HẠN.`);
-                if (!hasBeenNotified(task._id, 'due')) {
-                    console.log(`   - ✅ CHƯA THÔNG BÁO "due". Đang gửi...`);
-                    showCustomNotification(task.title, 'due');
-                    openModal(task.title);
-                    markAsNotified(task._id, 'due');
-                } else {
-                    console.log(`   - 💤 ĐÃ THÔNG BÁO "due" trước đó.`);
-                }
-            }
-        });
-        console.log(`================= Kết thúc chu kỳ =================`);
-    }
-    closeModalBtn.addEventListener('click', closeModal);
-    window.addEventListener('click', (event) => {
-        if (event.target == taskModal) { closeModal(); }
-    });
-
-    function showNotification(taskTitle, type) { /* ... */ }
-    function markAsNotified(taskId, type) { /* ... */ }
-    function hasBeenNotified(taskId, type) { /* ... */ }
-    function initializeNotifications() {
+    function initializePushNotifications() {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            console.warn('Push messaging is not supported');
             enableNotificationsBtn.textContent = 'Trình duyệt không hỗ trợ 🚫';
             enableNotificationsBtn.disabled = true;
             return;
         }
-
-        const permission = Notification.permission;
         navigator.serviceWorker.ready.then(reg => {
-             reg.pushManager.getSubscription().then(subscription => {
+            reg.pushManager.getSubscription().then(subscription => {
                 if (subscription) {
                     enableNotificationsBtn.textContent = 'Thông báo đã bật ✅';
                     enableNotificationsBtn.disabled = true;
-                    //if (notificationIntervalId) clearInterval(notificationIntervalId);
-            //notificationIntervalId = setInterval(checkTasksForNotification, 60000);
                 } else {
                     enableNotificationsBtn.textContent = 'Bật thông báo 🔔';
                     enableNotificationsBtn.disabled = false;
@@ -259,41 +164,49 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
-    
-    enableNotificationsBtn.addEventListener('click', () => {
-        subscribeUserToPush();
-        // Chỉ hỏi quyền nếu trạng thái là 'default'
-        //if (Notification.permission === 'default') {
-            //Notification.requestPermission().then(permission => {
-                // Sau khi người dùng chọn, cập nhật lại trạng thái nút và bộ đếm
-                //initializeNotifications();
-            //});
-        //}
+
+    enableNotificationsBtn.addEventListener('click', () => { subscribeUserToPush(); });
+
+    // === PHẦN 5: POP-UP VÀ ÂM THANH TRÊN WEB (Chỉ hoạt động khi đang mở web) ===
+    const notificationSound = document.getElementById('notification-sound');
+    const taskModal = document.getElementById('task-due-modal');
+    const modalTaskTitle = document.getElementById('modal-task-title');
+    const closeModalBtn = document.querySelector('.close-btn');
+    let clientSideCheckedTasks = [];
+
+    function openModal(taskTitle) {
+        modalTaskTitle.textContent = `"${taskTitle}"`;
+        taskModal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        taskModal.style.display = 'none';
+    }
+
+    closeModalBtn.addEventListener('click', closeModal);
+    window.addEventListener('click', (event) => {
+        if (event.target == taskModal) { closeModal(); }
     });
+
+    function checkTasksForClientSideAlerts() {
+        const now = new Date();
+        const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
+
+        localTasks.forEach(task => {
+            if (task.isCompleted || clientSideCheckedTasks.includes(task._id)) return;
+            const dueDate = new Date(task.dueDate);
+            if (isNaN(dueDate.getTime())) return;
+            if (dueDate <= now && dueDate > oneMinuteAgo) {
+                console.log(`Client-side: Task "${task.title}" đã đến hạn! Hiển thị pop-up.`);
+                notificationSound.play().catch(e => console.error("Lỗi phát âm thanh:", e));
+                openModal(task.title);
+                clientSideCheckedTasks.push(task._id);
+            }
+        });
+    }
+
     // === PHẦN CUỐI: KHỞI CHẠY BAN ĐẦU ===
     fetchTasks();
-    initializeNotifications();
+    initializePushNotifications();
+    setInterval(checkTasksForClientSideAlerts, 30000); // Bắt đầu bộ đếm giờ của trình duyệt, kiểm tra mỗi 30 giây
 });
-
-// CÁC HÀM HỖ TRỢ CHO THÔNG BÁO (để bên ngoài cho gọn)
-function showNotification(taskTitle, type) {
-    let bodyText = '';
-    if (type === 'upcoming') { bodyText = `Nhiệm vụ "${taskTitle}" sẽ hết hạn trong 15 phút nữa!`; }
-    else if (type === 'due') { bodyText = `Đã đến hạn hoàn thành nhiệm vụ "${taskTitle}"!`; }
-    const notification = new Notification('🔔 Nhắc nhở nhiệm vụ!', {
-        body: bodyText,
-        icon: 'https://cdn-icons-png.flaticon.com/512/3239/3239958.png'
-    });
-}
-
-function markAsNotified(taskId, type) {
-    const notifiedTasks = JSON.parse(localStorage.getItem('notifiedTasks')) || {};
-    if (!notifiedTasks[taskId]) { notifiedTasks[taskId] = []; }
-    notifiedTasks[taskId].push(type);
-    localStorage.setItem('notifiedTasks', JSON.stringify(notifiedTasks));
-}
-
-function hasBeenNotified(taskId, type) {
-    const notifiedTasks = JSON.parse(localStorage.getItem('notifiedTasks')) || {};
-    return notifiedTasks[taskId] && notifiedTasks[taskId].includes(type);
-}

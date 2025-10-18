@@ -6,88 +6,96 @@ const cron = require('node-cron');
 const Task = require('./models/Task');
 const User = require('./models/User');
 
-// --- Cấu hình Express ---
+// --- Cấu hình (Không đổi) ---
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.static('public'));
 app.use(express.json());
-
-// --- Cấu hình Web Push ---
 try {
-    webpush.setVapidDetails(
-        process.env.VAPID_SUBJECT,
-        process.env.VAPID_PUBLIC_KEY,
-        process.env.VAPID_PRIVATE_KEY
-    );
-    console.log("✅ VAPID keys đã được cấu hình thành công.");
+    webpush.setVapidDetails(process.env.VAPID_SUBJECT, process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+    console.log("✅ VAPID keys đã được cấu hình.");
 } catch (error) {
-    console.error("❌ LỖI NGHIÊM TRỌNG: Không thể cấu hình VAPID keys. Hãy kiểm tra file .env và các biến môi trường trên Render.", error);
+    console.error("❌ LỖI CẤU HÌNH VAPID KEYS:", error);
 }
-
-// --- Routes ---
 app.use('/api/tasks', require('./routes/taskRoutes'));
 app.use('/api/users', require('./routes/authRoutes'));
 app.use('/api/push', require('./routes/pushRoutes'));
-
-// --- Kết nối DB và khởi chạy Server ---
 mongoose.connect(process.env.MONGO_URI)
     .then(() => {
-        console.log('✅ Kết nối thành công tới MongoDB!');
-        app.listen(PORT, () => console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`));
+        console.log('✅ Kết nối MongoDB thành công!');
+        app.listen(PORT, () => console.log(`🚀 Server đang chạy tại Port: ${PORT}`));
     })
     .catch((err) => console.error('❌ Lỗi kết nối MongoDB:', err));
 
-// --- Tác vụ kiểm tra định kỳ (Cron Job) ---
+// --- Tác vụ kiểm tra định kỳ (Cron Job) - PHIÊN BẢN HOÀN CHỈNH ---
 cron.schedule('* * * * *', async () => {
-    console.log(`[${new Date().toLocaleTimeString()}] Cron job: Bắt đầu kiểm tra các nhiệm vụ...`);
-    
+    const now = new Date();
+    console.log(`[${now.toISOString()}] Cron job: Bắt đầu kiểm tra...`);
+
+    // --- GỬI THÔNG BÁO "SẮP ĐẾN HẠN" (15 PHÚT) ---
+    const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
     try {
-        const now = new Date();
-        const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
-
-        const tasksToNotify = await Task.find({
+        const upcomingTasks = await Task.find({
             isCompleted: false,
-            dueDate: { $lte: fifteenMinutesFromNow, $gt: now }, // Tìm task trong 15 phút tới
-            'notified.upcoming': { $ne: true } // Chỉ lấy những task chưa được thông báo "sắp đến hạn"
+            dueDate: { $gte: now, $lte: fifteenMinutesFromNow },
+            'notified.upcoming': { $ne: true }
         });
-
-        console.log(`-> Tìm thấy ${tasksToNotify.length} nhiệm vụ sắp đến hạn cần thông báo.`);
-
-        for (const task of tasksToNotify) {
-            const user = await User.findById(task.user);
-            if (user && user.pushSubscription) {
-                const payload = JSON.stringify({
-                    title: '🔔 Nhắc nhở nhiệm vụ!',
-                    body: `Nhiệm vụ "${task.title}" sẽ hết hạn trong vòng 15 phút nữa!`
-                });
-                
-                try {
-                    console.log(`   - Đang chuẩn bị gửi thông báo cho task: "${task.title}"...`);
-                    await webpush.sendNotification(user.pushSubscription, payload);
-                    console.log(`   - ✅ Đã gửi thông báo thành công!`);
-
-                    // Đánh dấu là đã thông báo để không gửi lại
-                    task.notified = { ...task.notified, upcoming: true };
-                    await task.save();
-
-                } catch (error) {
-                    // Nếu subscription hết hạn (lỗi 410), xóa nó đi
-                    if (error.statusCode === 410) {
-                        console.log(`   - ❗ Subscription cho user ${user.email} đã hết hạn. Đang xóa...`);
-                        user.pushSubscription = null;
-                        await user.save();
-                    } else {
-                        console.error(`   - ❌ Lỗi khi gửi thông báo cho task "${task.title}":`, error.body || error);
-                    }
-                }
-            }
+        if (upcomingTasks.length > 0) console.log(` -> Tìm thấy ${upcomingTasks.length} nhiệm vụ SẮP đến hạn.`);
+        for (const task of upcomingTasks) {
+            await sendNotificationForTask(task, 'upcoming');
         }
     } catch (error) {
-        console.error('❌ Lỗi nghiêm trọng trong cron job:', error);
+        console.error('❌ Lỗi khi kiểm tra nhiệm vụ sắp đến hạn:', error);
     }
-    console.log(`[${new Date().toLocaleTimeString()}] Cron job: Kết thúc chu kỳ kiểm tra.`);
+
+    // --- GỬI THÔNG BÁO "ĐÃ ĐẾN HẠN" (TRONG 1 PHÚT VỪA QUA) ---
+    const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
+    try {
+        const dueTasks = await Task.find({
+            isCompleted: false,
+            dueDate: { $lte: now, $gt: oneMinuteAgo },
+            'notified.due': { $ne: true }
+        });
+        if (dueTasks.length > 0) console.log(` -> Tìm thấy ${dueTasks.length} nhiệm vụ VỪA đến hạn.`);
+        for (const task of dueTasks) {
+            await sendNotificationForTask(task, 'due');
+        }
+    } catch (error) {
+        console.error('❌ Lỗi khi kiểm tra nhiệm vụ đã đến hạn:', error);
+    }
+    console.log(`[${new Date().toISOString()}] Cron job: Kết thúc chu kỳ.`);
 });
 
-// Thêm một trường 'notified' vào Task model để theo dõi
-// Mở file models/Task.js và thêm vào schema:
-// notified: { type: Object, default: { upcoming: false, due: false } }
+// Hàm trợ giúp để gửi thông báo và cập nhật DB
+async function sendNotificationForTask(task, type) {
+    const user = await User.findById(task.user);
+    if (!user || !user.pushSubscription) return;
+
+    let bodyText = '';
+    if (type === 'upcoming') {
+        bodyText = `Nhiệm vụ "${task.title}" sẽ hết hạn trong vòng 15 phút nữa!`;
+    } else { // type === 'due'
+        bodyText = `Đã đến hạn hoàn thành nhiệm vụ "${task.title}"!`;
+    }
+
+    const payload = JSON.stringify({ title: '🔔 Nhắc nhở nhiệm vụ!', body: bodyText });
+
+    try {
+        console.log(`   - Chuẩn bị gửi thông báo "${type}" cho task: "${task.title}"...`);
+        await webpush.sendNotification(user.pushSubscription, payload);
+        console.log(`   - ✅ Gửi thành công!`);
+        
+        // Đánh dấu đã thông báo để không gửi lại
+        task.notified[type] = true;
+        await Task.findByIdAndUpdate(task._id, { notified: task.notified });
+
+    } catch (error) {
+        if (error.statusCode === 410) { // Subscription hết hạn
+            console.log(`   - ❗ Subscription hết hạn cho user ${user.email}. Đang xóa...`);
+            user.pushSubscription = null;
+            await user.save();
+        } else {
+            console.error(`   - ❌ Lỗi khi gửi thông báo:`, error.body || error);
+        }
+    }
+}
