@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Nhiệm Vụ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-container">
+    <h1>📝 Sổ tay Nhiệm vụ</h1>
+    <div class="header-buttons">
+      <span id="user-fullname" class="user-greeting"></span>
+      <button id="enable-notifications-btn" class="secondary-button">Bật thông báo 🔔</button>
+      <button id="logout-btn" class="logout-button">Đăng xuất</button>
+    </div>
+    </main>
+
+    <form id="add-task-form" class="task-form">
+      <input type="text" id="task-title" placeholder="Tiêu đề nhiệm vụ..." required>
+      <input type="date" id="task-due-date" required>
+      <input type="time" id="task-due-time" required>
+      <button type="submit">Thêm Nhiệm Vụ</button>
+    </form>
+
+    <h2>Danh sách cần làm</h2>
+    <ul id="task-list" class="task-list">
+      </ul>
+  </main>
+  <script src="script.js"></script>
+  <audio id="notification-sound" src="notification.mp3" preload="auto"></audio>
+  <div id="task-due-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>⏰ Đã đến hạn!</h2>
+        <p>Đã đến lúc hoàn thành nhiệm vụ:</p>
+        <strong id="modal-task-title"></strong>
+      </div>
+    </div>
+</body>
+</html>
