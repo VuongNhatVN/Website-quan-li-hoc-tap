@@ -25,33 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_URL = '/api/tasks';
     let localTasks = []; // Biến toàn cục để lưu trữ danh sách nhiệm vụ
 
-    // === PHẦN 2: CÁC HÀM HIỂN THỊ VÀ LẤY DỮ LIỆU ===
-    const displayTasks = (tasks) => {
-        localTasks = tasks; // Cập nhật danh sách nhiệm vụ vào biến toàn cục
-        taskList.innerHTML = '';
-        tasks.forEach(task => {
-            const taskItem = document.createElement('li');
-            taskItem.classList.add('task-item');
-            if (task.isCompleted) {
-                taskItem.classList.add('completed');
-            }
-            taskItem.dataset.id = task._id;
-            const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-            const formattedDate = new Date(task.dueDate).toLocaleString('vi-VN', options);
-            taskItem.innerHTML = `
-                <div class="task-info">
-                    <strong>${task.title}</strong>
-                    <p>Hạn chót: ${formattedDate}</p>
-                </div>
-                <div class="task-actions">
-                    <button class="complete-btn">${task.isCompleted ? 'Hoàn tác' : 'Hoàn thành'}</button>
-                    <button class="delete-btn">Xóa</button>
-                </div>
-            `;
-            taskList.appendChild(taskItem);
-        });
-    };
-
     const fetchTasks = async () => {
         try {
             const response = await fetch(API_URL, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -61,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const tasks = await response.json();
-            displayTasks(tasks);
+            renderTasks();
         } catch (error) {
             console.error('Lỗi khi tải nhiệm vụ:', error);
         }
@@ -162,8 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
         navigator.serviceWorker.ready.then(reg => {
             reg.pushManager.getSubscription().then(subscription => {
                 if (subscription) {
-                    enableNotificationsBtn.textContent = 'Thông báo đã bật ✅';
+                    enableNotificationsBtn.innerHTML = '<i data-feather="bell" class="w-4 h-4"></i> Thông Báo Đã Bật';
                     enableNotificationsBtn.disabled = true;
+                    feather.replace();
                 } else {
                     enableNotificationsBtn.textContent = 'Bật thông báo 🔔';
                     enableNotificationsBtn.disabled = false;
@@ -182,12 +156,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let clientSideCheckedTasks = [];
 
     function openModal(taskTitle) {
-        modalTaskTitle.textContent = `"${taskTitle}"`;
-        taskModal.style.display = 'flex';
+        new Notification('⏰ Quản lí nhiệm vụ - Đã Đến Hạn!', {
+          body: `Nhiệm vụ: ${title}`,
+          icon: '/static/favicon.ico'
+        });
+      modalTitle.textContent = title;
+      modal.classList.remove('hidden');
+      notificationSound.play();
     }
 
     function closeModal() {
-        taskModal.style.display = 'none';
+        modal.classList.add('hidden');
     }
 
     closeModalBtn.addEventListener('click', closeModal);
@@ -221,7 +200,81 @@ document.addEventListener('DOMContentLoaded', () => {
         clientSideIntervalId = setInterval(checkTasksForClientSideAlerts, 30000);
         console.log("Bộ đếm giờ cho Pop-up và Âm thanh đã được khởi động an toàn.");
     }
+     VANTA.NET({
+      el: "#vanta-bg",
+      mouseControls: true,
+      touchControls: true,
+      gyroControls: false,
+      minHeight: 200.00,
+      minWidth: 200.00,
+      scale: 1.00,
+      scaleMobile: 1.00,
+      color: 0x6366f1,
+      backgroundColor: 0xf0f9ff,
+      points: 12.00,
+      maxDistance: 25.00,
+      spacing: 18.00
+    });
+    
+    // Initialize Feather Icons
+    feather.replace();
+    
+    // Update task count
+    function updateTaskCount() {
+      taskCount.textContent = tasks.length;
+    }
 
+    // Render tasks
+    function renderTasks() {
+      if (tasks.length === 0) {
+        taskList.innerHTML = `
+          <div class="text-center py-8 text-gray-500">
+            <i data-feather="inbox" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+            <p>Chưa có nhiệm vụ nào. Hãy thêm nhiệm vụ đầu tiên của bạn!</p>
+          </div>
+        `;
+        feather.replace();
+        return;
+      }
+
+      taskList.innerHTML = tasks.map((task, index) => `
+        <div class="task-card bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <input type="checkbox" class="w-5 h-5 text-primary rounded focus:ring-primary" 
+                     onchange="toggleTask(${index})" ${task.completed ? 'checked' : ''}>
+              <div>
+                <h3 class="font-semibold text-gray-800 ${task.completed ? 'line-through text-gray-400' : ''}">
+                  ${task.title}
+                </h3>
+                <p class="text-sm text-gray-500">
+                  <i data-feather="clock" class="w-3 h-3 inline mr-1"></i>
+                  ${new Date(task.dueDate).toLocaleString('vi-VN')}
+                </p>
+              </div>
+            </div>
+            <button onclick="deleteTask(${index})" class="text-gray-400 hover:text-red-500 transition-colors">
+              <i data-feather="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      feather.replace();
+      updateTaskCount();
+    }
+    // Toggle task completion
+    window.toggleTask = function(index) {
+      tasks[index].completed = !tasks[index].completed;
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      renderTasks();
+    };
+
+    // Delete task
+    window.deleteTask = function(index) {
+      tasks.splice(index, 1);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      renderTasks();
+    };
     // === PHẦN CUỐI: KHỞI CHẠY BAN ĐẦU ===
     fetchTasks();
     initializePushNotifications();
