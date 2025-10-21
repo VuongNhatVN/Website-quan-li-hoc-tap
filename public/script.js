@@ -23,7 +23,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const API_URL = '/api/tasks';
-    let localTasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    let localTasks = [];
+
+  function updateTaskCount() {
+      taskCount.textContent = tasks.length;
+    }
+    // Render tasks
+    const renderTasks = (tasks) => {
+        localTasks = tasks;
+      if (tasks.length === 0) {
+        taskList.innerHTML = `
+          <div class="text-center py-8 text-gray-500">
+            <i data-feather="inbox" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+            <p>Chưa có nhiệm vụ nào. Hãy thêm nhiệm vụ đầu tiên của bạn!</p>
+          </div>
+        `;
+        feather.replace();
+        return;
+      }
+
+      taskList.innerHTML = tasks.map((task, index) => `
+        <div class="task-card bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <input type="checkbox" class="w-5 h-5 text-primary rounded focus:ring-primary" 
+                     onchange="toggleTask(${index})" ${task.completed ? 'checked' : ''}>
+              <div>
+                <h3 class="font-semibold text-gray-800 ${task.completed ? 'line-through text-gray-400' : ''}">
+                  ${task.title}
+                </h3>
+                <p class="text-sm text-gray-500">
+                  <i data-feather="clock" class="w-3 h-3 inline mr-1"></i>
+                  ${new Date(task.dueDate).toLocaleString('vi-VN', options)}
+                </p>
+              </div>
+            </div>
+            <button onclick="deleteTask(${index})" class="text-gray-400 hover:text-red-500 transition-colors">
+              <i data-feather="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      feather.replace();
+      updateTaskCount();
+    }
 
     const fetchTasks = async () => {
         try {
@@ -34,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const tasks = await response.json();
-            renderTasks();
+            renderTasks(tasks);
         } catch (error) {
             console.error('Lỗi khi tải nhiệm vụ:', error);
         }
@@ -227,50 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize Feather Icons
     feather.replace();
-    
-    // Update task count
-    function updateTaskCount() {
-      taskCount.textContent = tasks.length;
-    }
 
-    // Render tasks
-    function renderTasks() {
-      if (tasks.length === 0) {
-        taskList.innerHTML = `
-          <div class="text-center py-8 text-gray-500">
-            <i data-feather="inbox" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
-            <p>Chưa có nhiệm vụ nào. Hãy thêm nhiệm vụ đầu tiên của bạn!</p>
-          </div>
-        `;
-        feather.replace();
-        return;
-      }
-
-      taskList.innerHTML = tasks.map((task, index) => `
-        <div class="task-card bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <input type="checkbox" class="w-5 h-5 text-primary rounded focus:ring-primary" 
-                     onchange="toggleTask(${index})" ${task.completed ? 'checked' : ''}>
-              <div>
-                <h3 class="font-semibold text-gray-800 ${task.completed ? 'line-through text-gray-400' : ''}">
-                  ${task.title}
-                </h3>
-                <p class="text-sm text-gray-500">
-                  <i data-feather="clock" class="w-3 h-3 inline mr-1"></i>
-                  ${new Date(task.dueDate).toLocaleString('vi-VN')}
-                </p>
-              </div>
-            </div>
-            <button onclick="deleteTask(${index})" class="text-gray-400 hover:text-red-500 transition-colors">
-              <i data-feather="trash-2" class="w-4 h-4"></i>
-            </button>
-          </div>
-        </div>
-      `).join('');
-      feather.replace();
-      updateTaskCount();
-    }
     // Toggle task completion
     window.toggleTask = function(index) {
       tasks[index].completed = !tasks[index].completed;
