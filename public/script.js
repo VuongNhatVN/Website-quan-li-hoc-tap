@@ -23,14 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const API_URL = '/api/tasks';
-    let localTasks = [];
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
   function updateTaskCount() {
       taskCount.textContent = tasks.length;
     }
     // Render tasks
-    const renderTasks = (tasks) => {
-        localTasks = tasks;
+    function renderTasks(){
       if (tasks.length === 0) {
         taskList.innerHTML = `
           <div class="text-center py-8 text-gray-500">
@@ -106,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
           taskDueDateInput: dueDate.toISOString(),
           completed: false
         });
-        localStorage.setItem('tasks', JSON.stringify(localTasks));
+        localStorage.setItem('tasks', JSON.stringify(tasks));
         fetchTasks();
         taskForm.reset();
             } else {
