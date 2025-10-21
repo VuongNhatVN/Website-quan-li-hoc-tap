@@ -37,14 +37,12 @@
         </div>
         
         <div class="flex flex-wrap items-center gap-3">
-          <span id="user-fullname" class="px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold">
-            Chào Người Dùng!
-          </span>
+          <span id="user-fullname" class="user-greeting px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold"></span>
           <button id="enable-notifications-btn" class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-full hover:bg-secondary/90 transition-colors">
             <i data-feather="bell" class="w-4 h-4"></i>
             Bật Thông Báo
           </button>
-          <button id="logout-btn" class="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors">
+          <button id="logout-btn" class="logout-button flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors">
             <i data-feather="log-out" class="w-4 h-4"></i>
             Đăng Xuất
           </button>
@@ -105,7 +103,7 @@
       </div>
       <p class="text-gray-600 mb-3">Đã đến lúc hoàn thành nhiệm vụ:</p>
       <strong id="modal-task-title" class="text-lg text-primary block bg-primary/10 p-3 rounded-xl"></strong>
-      <button class="w-full mt-4 bg-secondary text-white py-2 rounded-xl font-semibold hover:bg-secondary/90 transition-colors">
+      <button class="close-btn w-full mt-4 bg-secondary text-white py-2 rounded-xl font-semibold hover:bg-secondary/90 transition-colors">
         Đã Hiểu
       </button>
     </div>
@@ -132,159 +130,6 @@
       points: 12.00,
       maxDistance: 25.00,
       spacing: 18.00
-    });
-
-    // Initialize Feather Icons
-    feather.replace();
-
-    // Task Management Logic
-    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-    let notificationPermission = false;
-
-    // DOM Elements
-    const taskForm = document.getElementById('add-task-form');
-    const taskList = document.getElementById('task-list');
-    const taskCount = document.getElementById('task-count');
-    const modal = document.getElementById('task-due-modal');
-    const modalTitle = document.getElementById('modal-task-title');
-    const notificationSound = document.getElementById('notification-sound');
-    const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
-
-    // Update task count
-    function updateTaskCount() {
-      taskCount.textContent = tasks.length;
-    }
-
-    // Render tasks
-    function renderTasks() {
-      if (tasks.length === 0) {
-        taskList.innerHTML = `
-          <div class="text-center py-8 text-gray-500">
-            <i data-feather="inbox" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
-            <p>Chưa có nhiệm vụ nào. Hãy thêm nhiệm vụ đầu tiên của bạn!</p>
-          </div>
-        `;
-        feather.replace();
-        return;
-      }
-
-      taskList.innerHTML = tasks.map((task, index) => `
-        <div class="task-card bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <input type="checkbox" class="w-5 h-5 text-primary rounded focus:ring-primary" 
-                     onchange="toggleTask(${index})" ${task.completed ? 'checked' : ''}>
-              <div>
-                <h3 class="font-semibold text-gray-800 ${task.completed ? 'line-through text-gray-400' : ''}">
-                  ${task.title}
-                </h3>
-                <p class="text-sm text-gray-500">
-                  <i data-feather="clock" class="w-3 h-3 inline mr-1"></i>
-                  ${new Date(task.dueDate).toLocaleString('vi-VN')}
-                </p>
-              </div>
-            </div>
-            <button onclick="deleteTask(${index})" class="text-gray-400 hover:text-red-500 transition-colors">
-              <i data-feather="trash-2" class="w-4 h-4"></i>
-            </button>
-          </div>
-        </div>
-      `).join('');
-      feather.replace();
-      updateTaskCount();
-    }
-
-    // Add new task
-    taskForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const title = document.getElementById('task-title').value;
-      const dueDate = document.getElementById('task-due-date').value;
-      const dueTime = document.getElementById('task-due-time').value;
-      
-      if (title && dueDate && dueTime) {
-        const dueDateTime = new Date(`${dueDate}T${dueTime}`);
-        
-        tasks.push({
-          title,
-          dueDate: dueDateTime.toISOString(),
-          completed: false
-        });
-        
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-        renderTasks();
-        taskForm.reset();
-        
-        // Schedule notification
-        scheduleNotification(title, dueDateTime);
-      }
-    });
-
-    // Toggle task completion
-    window.toggleTask = function(index) {
-      tasks[index].completed = !tasks[index].completed;
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-      renderTasks();
-    };
-
-    // Delete task
-    window.deleteTask = function(index) {
-      tasks.splice(index, 1);
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-      renderTasks();
-    };
-
-    // Notification functions
-    function scheduleNotification(title, dueDate) {
-      const now = new Date();
-      const timeUntilDue = dueDate - now;
-      
-      if (timeUntilDue > 0) {
-        setTimeout(() => {
-          showNotification(title);
-        }, timeUntilDue);
-      }
-    }
-
-    function showNotification(title) {
-      if (notificationPermission) {
-        new Notification('⏰ Quản lí nhiệm vụ - Đã Đến Hạn!', {
-          body: `Nhiệm vụ: ${title}`,
-          icon: '/static/favicon.ico'
-        });
-      }
-      
-      modalTitle.textContent = title;
-      modal.classList.remove('hidden');
-      notificationSound.play();
-    }
-
-    // Request notification permission
-    enableNotificationsBtn.addEventListener('click', async () => {
-      if ('Notification' in window) {
-        const permission = await Notification.requestPermission();
-        notificationPermission = permission === 'granted';
-        
-        if (notificationPermission) {
-          enableNotificationsBtn.innerHTML = '<i data-feather="bell" class="w-4 h-4"></i> Thông Báo Đã Bật';
-          feather.replace();
-        }
-      }
-    });
-
-    // Close modal
-    modal.querySelector('.close-btn').addEventListener('click', () => {
-      modal.classList.add('hidden');
-    });
-
-    // Initialize
-    renderTasks();
-
-    // Check for due tasks on load
-    tasks.forEach(task => {
-      if (!task.completed && new Date(task.dueDate) <= new Date()) {
-        showNotification(task.title);
-      }
     });
   </script>
 </body>
