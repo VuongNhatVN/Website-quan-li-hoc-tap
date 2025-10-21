@@ -41,7 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
         feather.replace();
         return;
       }
-
+      const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+      const formattedDate = new Date(task.dueDate).toLocaleString('vi-VN', options);
       taskList.innerHTML = tasks.map((task, index) => `
         <div class="task-card bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all">
           <div class="flex items-center justify-between">
@@ -54,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </h3>
                 <p class="text-sm text-gray-500">
                   <i data-feather="clock" class="w-3 h-3 inline mr-1"></i>
-                  ${new Date(task.dueDate).toLocaleString('vi-VN', options)}
+                  ${formattedDate}
                 </p>
               </div>
             </div>
@@ -105,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
           taskDueDateInput: dueDate.toISOString(),
           completed: false
         });
-        
         localStorage.setItem('tasks', JSON.stringify(localTasks));
         fetchTasks();
         taskForm.reset();
