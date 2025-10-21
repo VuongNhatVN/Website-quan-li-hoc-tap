@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const API_URL = '/api/tasks';
-    let localTasks = []; // Biến toàn cục để lưu trữ danh sách nhiệm vụ
+    let localTasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
     const fetchTasks = async () => {
         try {
@@ -55,8 +55,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ title, dueDate: dueDate.toISOString() }),
             });
             if (response.ok) {
-                taskForm.reset();
-                fetchTasks();
+                const dueDateTime = new Date(`${taskDueDateInput}T${taskDueTimeInput}`);
+        
+        tasks.push({
+          title,
+          taskDueDateInput: dueDate.toISOString(),
+          completed: false
+        });
+        
+        localStorage.setItem('tasks', JSON.stringify(localTasks));
+        fetchTasks();
+        taskForm.reset();
             } else {
                 alert('Thêm nhiệm vụ thất bại!');
             }
