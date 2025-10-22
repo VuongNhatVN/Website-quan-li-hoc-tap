@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
             enableNotificationsBtn.disabled = true;
         } catch (error) {
             console.error('Lỗi khi đăng ký push notification:', error);
-            enableNotificationsBtn.textContent = 'Lỗi! Thử lại 🚫';
+            enableNotificationsBtn.textContent = 'Lỗi! Có vẻ trình duyệt đã bị chặn thông báo 🚫';
             enableNotificationsBtn.disabled = false;
         }
     }
