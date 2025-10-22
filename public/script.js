@@ -267,14 +267,30 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Bộ đếm giờ cho Pop-up và Âm thanh đã được khởi động an toàn.");
     }
 // Phần 8: Reminder
-    function saveReminderSettings() {
+    async function saveReminderSettings() {
         const reminderCheckboxes = document.querySelectorAll('#reminder-options input[name="reminder"]:checked');
         const reminderTimes = Array.from(reminderCheckboxes).map(checkbox => checkbox.value);
-        localStorage.setItem('preferredReminders', JSON.stringify(reminderTimes));
+        
+        // Gửi thẳng lên server
+        try {
+            await fetch('/api/users/preferences', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Gửi token xác thực
+                },
+                body: JSON.stringify({ preferredReminders: reminderTimes })
+            });
+            console.log('Đã lưu cài đặt lên server.');
+        } catch (error) {
+            console.error('Lỗi khi lưu cài đặt lên server:', error);
+        }
     }
 
     function loadReminderSettings() {
-        const preferredReminders = JSON.parse(localStorage.getItem('preferredReminders'));
+        // Dữ liệu này được lưu vào localStorage từ lúc login.js chạy
+        const preferredReminders = JSON.parse(localStorage.getItem('preferredReminders')); 
+        
         if (preferredReminders && Array.isArray(preferredReminders)) {
             const allCheckboxes = document.querySelectorAll('#reminder-options input[name="reminder"]');
             allCheckboxes.forEach(checkbox => {

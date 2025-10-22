@@ -61,12 +61,25 @@ router.post('/login', async (req, res) => {
 
     res.json({
       token,
-      fullName: user.fullName
+      fullName: user.fullName,
+      preferredReminders: user.preferredReminders
     });
 
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server' });
   }
 });
+router.put('/preferences', authMiddleware, async (req, res) => {
+  try {
+    const { preferredReminders } = req.body;
 
+    // Tìm người dùng và cập nhật trường cài đặt
+    await User.findByIdAndUpdate(req.user.id, { preferredReminders });
+
+    res.status(200).json({ message: 'Cài đặt đã được lưu.' });
+  } catch (error) {
+    console.error('Lỗi lưu cài đặt:', error);
+    res.status(500).json({ message: 'Lỗi server khi lưu cài đặt.' });
+  }
+});
 module.exports = router;

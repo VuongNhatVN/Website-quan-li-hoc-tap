@@ -19,5 +19,9 @@ const userSchema = new mongoose.Schema({
     type: Object,
     default: null
   },
+  preferredReminders: {
+    type: [String],
+    default: [] // Mặc định là một mảng rỗng
+  }
 }, { timestamps: true });
 module.exports = mongoose.model('User', userSchema);
