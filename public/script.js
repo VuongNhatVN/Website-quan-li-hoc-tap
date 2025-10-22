@@ -124,7 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }),
             });
             if (response.ok) {
-                taskForm.reset();
+                taskTitleInput.value = '';
+                taskDueDateInput.value = '';
+                taskDueTimeInput.value = '';
                 fetchTasks();
             } else {
                 alert('Thêm nhiệm vụ thất bại!');
@@ -264,8 +266,29 @@ document.addEventListener('DOMContentLoaded', () => {
         clientSideIntervalId = setInterval(checkTasksForClientSideAlerts, 30000);
         console.log("Bộ đếm giờ cho Pop-up và Âm thanh đã được khởi động an toàn.");
     }
+// Phần 8: Reminder
+    function saveReminderSettings() {
+        const reminderCheckboxes = document.querySelectorAll('#reminder-options input[name="reminder"]:checked');
+        const reminderTimes = Array.from(reminderCheckboxes).map(checkbox => checkbox.value);
+        localStorage.setItem('preferredReminders', JSON.stringify(reminderTimes));
+    }
 
+    function loadReminderSettings() {
+        const preferredReminders = JSON.parse(localStorage.getItem('preferredReminders'));
+        if (preferredReminders && Array.isArray(preferredReminders)) {
+            const allCheckboxes = document.querySelectorAll('#reminder-options input[name="reminder"]');
+            allCheckboxes.forEach(checkbox => {
+                if (preferredReminders.includes(checkbox.value)) {
+                    checkbox.checked = true;
+                }
+            });
+        }
+    }
+
+    // Thêm sự kiện để tự động lưu mỗi khi người dùng thay đổi lựa chọn
+    reminderOptions.addEventListener('change', saveReminderSettings);
     // === PHẦN CUỐI: KHỞI CHẠY BAN ĐẦU ===
+    loadReminderSettings();
     fetchTasks();
     initializePushNotifications();
 });
