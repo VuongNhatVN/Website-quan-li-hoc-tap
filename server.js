@@ -94,8 +94,15 @@ async function sendNotificationForTask(task, type, reminderKey = '', minutesBefo
     let notifiedKey = '';
 
     if (type === 'upcoming') {
-        bodyText = `Nhiệm vụ "${task.title}" sẽ hết hạn trong khoảng ${reminderKey.replace('m', ' phút').replace('h', ' tiếng')} nữa!`;
-        notifiedKey = `upcoming_${reminderKey}`; // vd: 'upcoming_15m'
+        let timeUnit = '';
+        if (reminderKey.includes('m')) {
+            timeUnit = reminderKey.replace('m', ' phút');
+        } else if (reminderKey.includes('h')) {
+            timeUnit = reminderKey.replace('h', ' tiếng');
+        }
+        
+        bodyText = `Nhiệm vụ "${task.title}" sẽ hết hạn trong khoảng ${timeUnit} nữa!`;
+        notifiedKey = `upcoming_${reminderKey}`;
     } else { // type === 'due'
         bodyText = `Đã đến hạn hoàn thành nhiệm vụ "${task.title}"!`;
         notifiedKey = 'due';

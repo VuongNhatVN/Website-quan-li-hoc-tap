@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // Nhập User model
+const User = require('../models/User');
+const authMiddleware = require('../middleware/authMiddleware');
+
 
 // === ĐĂNG KÝ (REGISTER) ===
 router.post('/register', async (req, res) => {
