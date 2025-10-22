@@ -18,12 +18,11 @@ router.get('/', async (req, res) => {
 
 // POST: Tạo nhiệm vụ mới
 router.post('/', async (req, res) => {
-    const { title, dueDate, reminderTimes } = req.body;
+    const { title, dueDate } = req.body;
     try {
         const newTask = new Task({
             title,
             dueDate,
-            reminderTimes,
             user: req.user.id
         });
         const task = await newTask.save();

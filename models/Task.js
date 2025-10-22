@@ -1,9 +1,15 @@
+// models/Task.js
 const mongoose = require('mongoose');
 
+// bản thiết kế (Schema) cho một Task
 const taskSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, 'Tiêu đề là bắt buộc'],
+    required: [true, 'Tiêu đề là bắt buộc'], // Bắt buộc phải có
+  },
+  description: {
+    type: String,
+    default: '', // Nếu không có thì giá trị mặc định là chuỗi rỗng
   },
   dueDate: {
     type: Date,
@@ -11,24 +17,20 @@ const taskSchema = new mongoose.Schema({
   },
   isCompleted: {
     type: Boolean,
-    default: false,
+    default: false, // Mặc định một task mới là chưa hoàn thành
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  // MỚI: Mảng lưu các mốc thời gian nhắc nhở (vd: '5m', '15m', '1h')
-  reminderTimes: {
-    type: [String],
-    default: []
-  },
-  // CẬP NHẬT: Dùng Map để lưu động trạng thái thông báo
   notified: {
-    type: Map,
-    of: Boolean,
-    default: {}
+    type: Object,
+    default: { upcoming: false, due: false }
   }
-}, { timestamps: true });
+}, { timestamps: true }); // Tự động thêm 2 trường createdAt và updatedAt
+// "Biên dịch" bản thiết kế thành một Model (Mô hình)
+// Model này là thứ chúng ta sẽ dùng để tương tác với collection "tasks" trong DB
+const Task = mongoose.model('Task', taskSchema);
 
-module.exports = mongoose.model('Task', taskSchema);
+module.exports = Task; // Xuất Model ra để các file khác có thể dùng
