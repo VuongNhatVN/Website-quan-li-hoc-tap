@@ -1,28 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
     // === PHẦN 1: KHỞI TẠO VÀ LẤY CÁC PHẦN TỬ HTML ===
     const token = localStorage.getItem('token');
-    if (token) {
-        loadReminderSettings();
-        fetchTasks();
-        subscribeUserToPush();
-        initializePushNotifications();
-        } else {
+    if (!token) {
         window.location.href = '/login.html';
         return;
     }
 
+    // Lấy các phần tử HTML (ID đều khớp với file HTML mới)
     const taskForm = document.getElementById('add-task-form');
     const taskTitleInput = document.getElementById('task-title');
     const taskDueDateInput = document.getElementById('task-due-date');
     const taskDueTimeInput = document.getElementById('task-due-time');
     const taskList = document.getElementById('task-list');
-    const taskCount = document.getElementById('task-count');
+    const taskCount = document.getElementById('task-count'); // Element mới
     const userFullNameSpan = document.getElementById('user-fullname');
     const logoutBtn = document.getElementById('logout-btn');
     const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
-    const reminderOptionsDiv = document.getElementById('reminder-options');
-    const saveSettingsBtn = document.getElementById('save-settings-btn');
-    const settingsStatus = document.getElementById('settings-status');
 
     const API_URL = '/api/tasks';
     let localTasks = [];
@@ -265,93 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clientSideIntervalId = setInterval(checkTasksForClientSideAlerts, 30000);
         console.log("Bộ đếm giờ cho Pop-up và Âm thanh đã được khởi động an toàn.");
     }
-    // Reminder new
-    async function loadReminderSettings() {
-        if (!token) return; // Chưa đăng nhập
 
-        try {
-            const response = await fetch('/api/auth/settings', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (!response.ok) {
-                throw new Error('Không thể tải cài đặt nhắc nhở.');
-            }
-            const data = await response.json();
-            updateReminderCheckboxes(data.reminderTimes || [15]); // Dùng default [15] nếu không có
-        } catch (error) {
-            console.error('Lỗi tải cài đặt:', error);
-            settingsStatus.textContent = 'Lỗi khi tải cài đặt.';
-            settingsStatus.style.color = 'red';
-            // Có thể set checkbox mặc định nếu lỗi
-            updateReminderCheckboxes([15]);
-        }
-    }
-    function updateReminderCheckboxes(savedTimes) {
-        const checkboxes = reminderOptionsDiv.querySelectorAll('input[name="reminderTime"]');
-        checkboxes.forEach(checkbox => {
-            // Chuyển đổi value sang number để so sánh
-            checkbox.checked = savedTimes.includes(Number(checkbox.value));
-        });
-    }
-    async function saveReminderSettings() {
-    if (!token) {
-         settingsStatus.textContent = 'Bạn cần đăng nhập để lưu cài đặt.';
-         settingsStatus.style.color = 'orange';
-        return;
-    }
-
-    const selectedTimes = [];
-    const checkboxes = reminderOptionsDiv.querySelectorAll('input[name="reminderTime"]:checked');
-    checkboxes.forEach(checkbox => {
-        selectedTimes.push(Number(checkbox.value)); // Lưu giá trị dạng số
-    });
-
-    // Đảm bảo luôn có ít nhất 1 lựa chọn, ví dụ mặc định là 15 phút nếu không chọn gì
-    if (selectedTimes.length === 0) {
-         // Tạm thời tự động thêm 15 phút nếu không chọn gì
-         selectedTimes.push(15);
-         updateReminderCheckboxes(selectedTimes); // Cập nhật lại UI
-    }
-
-    settingsStatus.textContent = 'Đang lưu...';
-    settingsStatus.style.color = 'blue';
-
-    try {
-        const response = await fetch('/api/auth/settings', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ reminderTimes: selectedTimes })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Không thể lưu cài đặt.');
-        }
-
-        const data = await response.json();
-        settingsStatus.textContent = 'Đã lưu cài đặt nhắc nhở!';
-        settingsStatus.style.color = 'green';
-        updateReminderCheckboxes(data.reminderTimes); // Cập nhật lại checkbox nếu server có trả về
-         // Xóa thông báo sau vài giây
-        setTimeout(() => { settingsStatus.textContent = ''; }, 3000);
-
-    } catch (error) {
-        console.error('Lỗi lưu cài đặt:', error);
-        settingsStatus.textContent = `Lỗi: ${error.message}`;
-        settingsStatus.style.color = 'red';
-    }
-}
-
-    // Gắn sự kiện click cho nút lưu
-    if (saveSettingsBtn) {
-        saveSettingsBtn.addEventListener('click', saveReminderSettings);
-    }
     // === PHẦN CUỐI: KHỞI CHẠY BAN ĐẦU ===
     fetchTasks(); // Tải task (và hàm này sẽ tự gọi startClientSideChecker)
     initializePushNotifications(); // Khởi tạo push notifications

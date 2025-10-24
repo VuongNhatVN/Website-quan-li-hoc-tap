@@ -31,22 +31,3 @@
   50% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
-.settings-section {
-    margin-top: 20px;
-    padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: #f9f9f9;
-}
-
-#reminder-options label {
-    display: inline-block; /* Hoặc block tùy layout */
-    margin-right: 15px;
-    margin-bottom: 5px;
-}
-
-#save-settings-btn {
-    margin-top: 10px;
-    padding: 8px 15px;
-    cursor: pointer;
-}

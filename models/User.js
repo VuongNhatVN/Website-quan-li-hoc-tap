@@ -15,14 +15,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Mật khẩu là bắt buộc'],
   },
-  reminderTimes: {
-        type: [Number],
-        default: [15] // Giá trị mặc định ban đầu là 15 phút
-    },
   pushSubscription: {
     type: Object,
     default: null
   },
-  
 }, { timestamps: true });
 module.exports = mongoose.model('User', userSchema);
