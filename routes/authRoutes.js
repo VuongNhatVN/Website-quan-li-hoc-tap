@@ -1,10 +1,11 @@
 const express = require('express');
+const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const authMiddleware = require('../middleware/authMiddleware'); // Middleware xác thực
-const router = express.Router();
+const authMiddleware = require('../middleware/authMiddleware');
 
+// === ĐĂNG KÝ (REGISTER) ===
 router.post('/register', async (req, res) => {
   try {
     const { fullName, email, password, confirmPassword } = req.body;
@@ -33,72 +34,46 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ message: 'Lỗi server' });
   }
 });
+
+// === ĐĂNG NHẬP (LOGIN) ===
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // 1. Tìm người dùng trong DB
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Email hoặc mật khẩu không đúng' });
     }
-
-    // 2. So sánh mật khẩu
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Email hoặc mật khẩu không đúng' });
     }
-
-    // 3. Tạo và cấp "giấy thông hành" (JWT)
     const payload = { user: { id: user.id } };
-    const token = jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' } // Token hết hạn sau 1 giờ
-    );
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
+    // Gửi cả token, fullName, và cài đặt nhắc nhở đã lưu
     res.json({
       token,
-      fullName: user.fullName
+      fullName: user.fullName,
+      preferredReminders: user.preferredReminders // Gửi cài đặt về
     });
-
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server' });
   }
 });
-router.get('/settings', authMiddleware, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).select('reminderTimes'); // Chỉ lấy trường reminderTimes
-        if (!user) {
-            return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
-        }
-        res.json({ reminderTimes: user.reminderTimes });
-    } catch (error) {
-        console.error("Lỗi khi lấy cài đặt:", error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
+// === LƯU ===
+router.put('/preferences', authMiddleware, async (req, res) => {
+  try {
+    const { preferredReminders } = req.body;
+    // Validate đầu vào là một mảng string
+    if (!Array.isArray(preferredReminders) || !preferredReminders.every(item => typeof item === 'string')) {
+         return res.status(400).json({ message: 'Dữ liệu cài đặt không hợp lệ.' });
     }
+    await User.findByIdAndUpdate(req.user.id, { preferredReminders });
+    res.status(200).json({ message: 'Cài đặt đã được lưu.' });
+  } catch (error) {
+    console.error('Lỗi lưu cài đặt:', error);
+    res.status(500).json({ message: 'Lỗi server khi lưu cài đặt.' });
+  }
 });
-router.put('/settings', authMiddleware, async (req, res) => {
-    const { reminderTimes } = req.body;
 
-    // Xác thực đầu vào (reminderTimes phải là một mảng các số hợp lệ)
-    if (!Array.isArray(reminderTimes) || !reminderTimes.every(time => typeof time === 'number' && [5, 15, 30, 60, 120, 300].includes(time))) {
-        return res.status(400).json({ message: 'Định dạng reminderTimes không hợp lệ.' });
-    }
-
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user) {
-            return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
-        }
-
-        user.reminderTimes = [...new Set(reminderTimes)].sort((a, b) => a - b); // Loại bỏ trùng lặp và sắp xếp
-        await user.save();
-
-        res.json({ message: 'Cài đặt nhắc nhở đã được cập nhật.', reminderTimes: user.reminderTimes });
-    } catch (error) {
-        console.error("Lỗi khi cập nhật cài đặt:", error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
-    }
-});
 module.exports = router;

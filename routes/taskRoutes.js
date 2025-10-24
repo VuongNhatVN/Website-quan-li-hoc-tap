@@ -18,17 +18,23 @@ router.get('/', async (req, res) => {
 
 // POST: Tạo nhiệm vụ mới
 router.post('/', async (req, res) => {
-    const { title, dueDate } = req.body;
+    const { title, dueDate, reminderTimes } = req.body;
+    if (!dueDate || isNaN(new Date(dueDate).getTime())) {
+        return res.status(400).json({ message: 'Ngày hết hạn không hợp lệ.' });
+    }
     try {
         const newTask = new Task({
             title,
-            dueDate,
-            user: req.user.id
+            dueDate: new Date(dueDate), // Đảm bảo lưu dưới dạng Date
+            reminderTimes,
+            user: req.user.id,
+            notified: new Map() // Khởi tạo Map rỗng
         });
-        const task = await newTask.save();
-        res.status(201).json(task);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
+        const savedTask = await newTask.save();
+        res.status(201).json(savedTask);
+    } catch (error) {
+        console.error("Lỗi khi tạo task:", error); // Thêm log lỗi chi tiết
+        res.status(400).json({ message: error.message || 'Không thể tạo nhiệm vụ.' });
     }
 });
 

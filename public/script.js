@@ -12,10 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskDueDateInput = document.getElementById('task-due-date');
     const taskDueTimeInput = document.getElementById('task-due-time');
     const taskList = document.getElementById('task-list');
-    const taskCount = document.getElementById('task-count'); // Element mới
+    const taskCount = document.getElementById('task-count');
     const userFullNameSpan = document.getElementById('user-fullname');
     const logoutBtn = document.getElementById('logout-btn');
     const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
+    const reminderOptions = document.getElementById('reminder-options');
 
     const API_URL = '/api/tasks';
     let localTasks = [];
@@ -87,18 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchTasks = async () => {
         try {
             const response = await fetch(API_URL, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (response.status === 401) {
-                localStorage.removeItem('token');
-                window.location.href = '/login.html';
-                return;
-            }
+            if (response.status === 401) { localStorage.clear(); window.location.href = '/login.html'; return; }
             const tasks = await response.json();
             displayTasks(tasks);
-            // Khởi động bộ đếm pop-up CHỈ SAU KHI đã tải task
-            startClientSideChecker(); 
-        } catch (error) {
-            console.error('Lỗi khi tải nhiệm vụ:', error);
-        }
+            startClientSideChecker();
+        } catch (error) { console.error('Lỗi khi tải nhiệm vụ:', error); }
     };
 
     // === PHẦN 5: CÁC HÀM XỬ LÝ SỰ KIỆN (FORM, CLICK, ...) ===
@@ -109,11 +103,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const time = taskDueTimeInput.value;
         if (!title || !date || !time) return alert('Vui lòng nhập đầy đủ thông tin!');
         const dueDate = new Date(`${date}T${time}`);
+        const reminderCheckboxes = document.querySelectorAll('#reminder-options input[name="reminder"]:checked');
+        const reminderTimes = Array.from(reminderCheckboxes).map(checkbox => checkbox.value);
         try {
             const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ title, dueDate: dueDate.toISOString() }),
+                body: JSON.stringify({ title, dueDate: dueDate.toISOString(), reminderTimes }),
             });
             if (response.ok) {
                 taskForm.reset();
@@ -259,7 +255,41 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Bộ đếm giờ cho Pop-up và Âm thanh đã được khởi động an toàn.");
     }
 
+    // === PHẦN 8: LƯU VÀ TẢI CÀI ĐẶT NHẮC NHỞ (CẬP NHẬT) ===
+    async function saveReminderSettings() {
+        const reminderCheckboxes = document.querySelectorAll('#reminder-options input[name="reminder"]:checked');
+        const reminderTimes = Array.from(reminderCheckboxes).map(checkbox => checkbox.value);
+        
+        // Cập nhật localStorage để giao diện phản hồi ngay lập tức
+        localStorage.setItem('preferredReminders', JSON.stringify(reminderTimes));
+
+        // Gửi lên server để lưu vào DB
+        try {
+            await fetch('/api/users/preferences', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ preferredReminders: reminderTimes })
+            });
+            console.log('Đã lưu cài đặt lên server.');
+        } catch (error) { console.error('Lỗi khi lưu cài đặt lên server:', error); }
+    }
+
+    function loadReminderSettings() {
+        // Tải từ localStorage (đã được lưu khi đăng nhập hoặc khi thay đổi)
+        const preferredReminders = JSON.parse(localStorage.getItem('preferredReminders') || '[]'); // Lấy từ LS, mặc định mảng rỗng
+        
+        if (Array.isArray(preferredReminders)) {
+            const allCheckboxes = document.querySelectorAll('#reminder-options input[name="reminder"]');
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = preferredReminders.includes(checkbox.value); // Tick dựa trên dữ liệu đã tải
+            });
+        }
+    }
+
+    reminderOptions.addEventListener('change', saveReminderSettings);
+
     // === PHẦN CUỐI: KHỞI CHẠY BAN ĐẦU ===
-    fetchTasks(); // Tải task (và hàm này sẽ tự gọi startClientSideChecker)
-    initializePushNotifications(); // Khởi tạo push notifications
+    loadReminderSettings(); // Tải cài đặt ngay khi vào trang
+    fetchTasks();
+    initializePushNotifications();
 });

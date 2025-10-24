@@ -20,7 +20,7 @@ loginForm.addEventListener('submit', async (e) => {
       // Lưu token vào "ví" của trình duyệt (localStorage)
       localStorage.setItem('token', data.token);
       localStorage.setItem('fullName', data.fullName);
-      // Chuyển hướng đến trang chính
+      localStorage.setItem('preferredReminders', JSON.stringify(data.preferredReminders || []));
       window.location.href = '/index.html';
     } else {
       alert(data.message);

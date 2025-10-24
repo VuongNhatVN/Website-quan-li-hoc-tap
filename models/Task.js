@@ -24,13 +24,17 @@ const taskSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  reminderTimes: {
+    type: [String],
+    default: []
+  },
+  // CẬP NHẬT: Dùng Map để lưu động trạng thái thông báo
   notified: {
-    type: Object,
-    default: { upcoming: false, due: false }
+    type: Map,
+    of: Boolean,
+    default: {}
   }
-}, { timestamps: true }); // Tự động thêm 2 trường createdAt và updatedAt
-// "Biên dịch" bản thiết kế thành một Model (Mô hình)
-// Model này là thứ chúng ta sẽ dùng để tương tác với collection "tasks" trong DB
+}, { timestamps: true });
 const Task = mongoose.model('Task', taskSchema);
 
 module.exports = Task; // Xuất Model ra để các file khác có thể dùng
