@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userFullNameSpan.textContent = `Chào, ${fullName}!`;
     }
 
-    // === PHẦN 3: HÀM HIỂN THỊ TASK (ĐÃ NÂNG CẤP) ===
+    // === PHẦN 3: HÀM HIỂN THỊ TASK ===
     const displayTasks = (tasks) => {
         localTasks = tasks;
         taskCount.textContent = tasks.length; // Cập nhật bộ đếm
@@ -112,7 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ title, dueDate: dueDate.toISOString(), reminderTimes }),
             });
             if (response.ok) {
-                taskForm.reset();
+                taskTitleInput.value = '';
+                taskDueDateInput.value = '';
+                taskDueTimeInput.value = '';
                 fetchTasks(); // Tải lại danh sách
             } else {
                 alert('Thêm nhiệm vụ thất bại!');
