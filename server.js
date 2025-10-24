@@ -6,7 +6,16 @@ const cron = require('node-cron');
 const Task = require('./models/Task');
 const User = require('./models/User');
 
-// --- Cấu hình (Không đổi) ---
+const vapidKeys = {
+    publicKey: process.env.VAPID_PUBLIC_KEY,
+    privateKey: process.env.VAPID_PRIVATE_KEY
+};
+webpush.setVapidDetails(
+    'mailto:vuonggame1217@gmail.com',
+    vapidKeys.publicKey,
+    vapidKeys.privateKey
+);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.static('public'));
@@ -29,41 +38,48 @@ mongoose.connect(process.env.MONGO_URI)
 
 // --- Tác vụ kiểm tra định kỳ (Cron Job) - PHIÊN BẢN HOÀN CHỈNH ---
 cron.schedule('* * * * *', async () => {
-    const now = new Date();
-    console.log(`[${now.toISOString()}] Cron job: Bắt đầu kiểm tra...`);
-
-    // --- GỬI THÔNG BÁO "SẮP ĐẾN HẠN" (15 PHÚT) ---
-    const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
+    console.log('Đang kiểm tra nhiệm vụ cần nhắc nhở...');
     try {
-        const upcomingTasks = await Task.find({
-            isCompleted: false,
-            dueDate: { $gte: now, $lte: fifteenMinutesFromNow },
-            'notified.upcoming': { $ne: true }
-        });
-        if (upcomingTasks.length > 0) console.log(` -> Tìm thấy ${upcomingTasks.length} nhiệm vụ SẮP đến hạn.`);
-        for (const task of upcomingTasks) {
-            await sendNotificationForTask(task, 'upcoming');
+        const now = new Date();
+        // Tìm các task chưa hoàn thành và chưa được nhắc nhở lần cuối (thêm cờ để tránh spam)
+        // Giả sử bạn có một trường 'lastRemindedAt' trong Task schema
+        const tasksToRemind = await Task.find({
+            completed: false,
+            dueDate: { $gte: now } // Chỉ nhắc cho task chưa quá hạn (hoặc tùy logic của bạn)
+            // Thêm điều kiện lọc để tránh nhắc lại quá nhanh nếu cần
+            // Ví dụ: $or: [{ lastRemindedAt: null }, { lastRemindedAt: { $lt: someTimeAgo } }]
+        }).populate('user', 'reminderTimes pushSubscription'); // Lấy thông tin user liên quan
+
+        for (const task of tasksToRemind) {
+            if (!task.user || !task.user.pushSubscription || !task.user.reminderTimes) {
+                continue; // Bỏ qua nếu không có thông tin user hoặc push subscription hoặc reminderTimes
+            }
+
+            const dueDate = new Date(task.dueDate);
+            const timeDiffMinutes = Math.round((dueDate - now) / (1000 * 60)); // Thời gian còn lại (phút)
+
+            // Lấy danh sách thời gian nhắc nhở của user, sắp xếp giảm dần để xử lý mốc lớn nhất trước
+            const userReminderTimes = [...task.user.reminderTimes].sort((a, b) => b - a);
+
+            for (const remindBeforeMinutes of userReminderTimes) {
+                // Kiểm tra xem có khớp với mốc thời gian nhắc nhở không (với sai số nhỏ, ví dụ 1 phút)
+                if (timeDiffMinutes >= remindBeforeMinutes -1 && timeDiffMinutes <= remindBeforeMinutes + 1) {
+                    // Kiểm tra xem đã nhắc cho mốc này gần đây chưa (cần trường lastRemindedAt)
+                    // Ví dụ: if (!task.lastRemindedAt || task.lastRemindedAt < now - khoảng thời gian tối thiểu) {
+                        console.log(`Gửi nhắc nhở cho task "${task.name}" (${remindBeforeMinutes} phút trước hạn)`);
+                        sendReminderNotification(task.user.pushSubscription, task, timeDiffMinutes);
+
+                        // Cập nhật thời gian nhắc nhở cuối cùng cho task (quan trọng để tránh spam)
+                        // await Task.findByIdAndUpdate(task._id, { lastRemindedAt: now });
+
+                        break; // Chỉ gửi 1 nhắc nhở mỗi lần kiểm tra (cho mốc lớn nhất khớp)
+                    // }
+                }
+            }
         }
     } catch (error) {
-        console.error('❌ Lỗi khi kiểm tra nhiệm vụ sắp đến hạn:', error);
+        console.error('Lỗi khi kiểm tra nhắc nhở:', error);
     }
-
-    // --- GỬI THÔNG BÁO "ĐÃ ĐẾN HẠN" (TRONG 1 PHÚT VỪA QUA) ---
-    const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
-    try {
-        const dueTasks = await Task.find({
-            isCompleted: false,
-            dueDate: { $lte: now, $gt: oneMinuteAgo },
-            'notified.due': { $ne: true }
-        });
-        if (dueTasks.length > 0) console.log(` -> Tìm thấy ${dueTasks.length} nhiệm vụ VỪA đến hạn.`);
-        for (const task of dueTasks) {
-            await sendNotificationForTask(task, 'due');
-        }
-    } catch (error) {
-        console.error('❌ Lỗi khi kiểm tra nhiệm vụ đã đến hạn:', error);
-    }
-    console.log(`[${new Date().toISOString()}] Cron job: Kết thúc chu kỳ.`);
 });
 
 // Hàm trợ giúp để gửi thông báo và cập nhật DB
@@ -98,4 +114,33 @@ async function sendNotificationForTask(task, type) {
             console.error(`   - ❌ Lỗi khi gửi thông báo:`, error.body || error);
         }
     }
+}
+function sendReminderNotification(subscription, task, minutesRemaining) {
+    const payload = JSON.stringify({
+        title: `Nhắc nhở: ${task.name}`,
+        body: `Nhiệm vụ sắp đến hạn. ${formatTimeRemaining(minutesRemaining)}`,
+        tag: `task-reminder-${task._id}`, // Tag để nhóm thông báo nếu cần
+        data: { taskId: task._id } // Dữ liệu kèm theo nếu cần
+    });
+
+    webpush.sendNotification(subscription, payload)
+        .catch(error => console.error('Lỗi gửi push notification:', error));
+}
+
+// Hàm định dạng thời gian còn lại
+function formatTimeRemaining(minutes) {
+    if (minutes <= 0) {
+        return "Đã đến hạn!";
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+
+    let remaining = 'Còn lại ';
+    if (hours > 0) {
+        remaining += `${hours} giờ `;
+    }
+    if (mins > 0) {
+        remaining += `${mins} phút`;
+    }
+    return remaining.trim() + '.';
 }
