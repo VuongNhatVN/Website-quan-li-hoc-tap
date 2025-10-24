@@ -1,186 +1,121 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quản Lý Nhiệm Vụ Học sinh</title>
-  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-  <link rel="stylesheet" href="index.css"> 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/feather-icons"></script>
-  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#6366f1',
-            secondary: '#f59e0b'
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Nhiệm Vụ Học sinh</title>
+    <link rel="icon" type="image/x-icon" href="/htn-logo.png"> <link rel="stylesheet" href="index.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                primary: '#6366f1',
+                secondary: '#f59e0b'
+              }
+            }
           }
         }
-      }
-    }
-  </script>
+    </script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50">
 <div id="vanta-bg" class="vanta-bg"></div>
 
-  <main class="app-container max-w-4xl mx-auto px-4 py-8">
+<main class="app-container max-w-4xl mx-auto px-4 py-8 relative z-10">
     <header class="glass-effect rounded-2xl p-6 mb-8 shadow-xl">
-      <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-        <div class="flex items-center gap-3">
-          <i data-feather="check-square" class="text-primary w-8 h-8"></i>
-          <h1 class="text-3xl font-bold text-gray-800">📝 Quản lí nhiệm vụ học sinh</h1>
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <i data-feather="check-square" class="text-primary w-8 h-8"></i>
+                <h1 class="text-3xl font-bold text-gray-800">📝 Quản lí nhiệm vụ học sinh</h1>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <span id="user-fullname" class="px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold">Chào Người Dùng!</span>
+                <button id="enable-notifications-btn" class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-full hover:bg-secondary/90 transition-colors">
+                    <i data-feather="bell" class="w-4 h-4"></i> Bật Thông Báo
+                </button>
+                <button id="logout-btn" class="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors">
+                    <i data-feather="log-out" class="w-4 h-4"></i> Đăng Xuất
+                </button>
+            </div>
         </div>
-        
-        <div class="flex flex-wrap items-center gap-3">
-          <span id="user-fullname" class="px-4 py-2 bg-primary/10 text-primary rounded-full font-semibold">
-            Chào Người Dùng!
-          </span>
-          <button id="enable-notifications-btn" class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-full hover:bg-secondary/90 transition-colors">
-            <i data-feather="bell" class="w-4 h-4"></i>
-            Bật Thông Báo
-          </button>
-          <button id="logout-btn" class="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors">
-            <i data-feather="log-out" class="w-4 h-4"></i>
-            Đăng Xuất
-          </button>
-        </div>
-      </div>
     </header>
 
     <section class="glass-effect rounded-2xl p-6 mb-8 shadow-xl">
-      <form id="add-task-form" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <input type="text" id="task-title" placeholder="📋 Tiêu đề nhiệm vụ..." 
-                 class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
-          <input type="date" id="task-due-date" 
-                 class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
-          <input type="time" id="task-due-time" 
-                 class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
-        </div>
-        <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    <i data-feather="bell" class="w-4 h-4 inline-block mr-1"></i>
-                    Đặt nhắc nhở (có thể chọn nhiều):
-                </label>
+        <form id="add-task-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="text" id="task-title" placeholder="📋 Tiêu đề nhiệm vụ..." required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                <input type="date" id="task-due-date" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                <input type="time" id="task-due-time" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2"><i data-feather="bell" class="w-4 h-4 inline-block mr-1"></i> Đặt nhắc nhở (có thể chọn nhiều):</label>
                 <div id="reminder-options" class="flex flex-wrap gap-3">
-                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
-                        <input type="checkbox" name="reminder" value="5m" class="rounded text-primary focus:ring-primary">
-                        <span class="text-sm font-medium text-gray-800">5 phút</span>
-                    </label>
-                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
-                        <input type="checkbox" name="reminder" value="15m" class="rounded text-primary focus:ring-primary">
-                        <span class="text-sm font-medium text-gray-800">15 phút</span>
-                    </label>
-                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
-                        <input type="checkbox" name="reminder" value="30m" class="rounded text-primary focus:ring-primary">
-                        <span class="text-sm font-medium text-gray-800">30 phút</span>
-                    </label>
-                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
-                        <input type="checkbox" name="reminder" value="1h" class="rounded text-primary focus:ring-primary">
-                        <span class="text-sm font-medium text-gray-800">1 tiếng</span>
-                    </label>
-                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
-                        <input type="checkbox" name="reminder" value="2h" class="rounded text-primary focus:ring-primary">
-                        <span class="text-sm font-medium text-gray-800">2 tiếng</span>
-                    </label>
-                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
-                        <input type="checkbox" name="reminder" value="5h" class="rounded text-primary focus:ring-primary">
-                        <span class="text-sm font-medium text-gray-800">5 tiếng</span>
-                    </label>
+                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors"><input type="checkbox" name="reminder" value="5m" class="rounded text-primary focus:ring-primary"><span class="text-sm font-medium text-gray-800">5 phút</span></label>
+                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors"><input type="checkbox" name="reminder" value="15m" class="rounded text-primary focus:ring-primary"><span class="text-sm font-medium text-gray-800">15 phút</span></label>
+                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors"><input type="checkbox" name="reminder" value="30m" class="rounded text-primary focus:ring-primary"><span class="text-sm font-medium text-gray-800">30 phút</span></label>
+                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors"><input type="checkbox" name="reminder" value="1h" class="rounded text-primary focus:ring-primary"><span class="text-sm font-medium text-gray-800">1 tiếng</span></label>
+                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors"><input type="checkbox" name="reminder" value="2h" class="rounded text-primary focus:ring-primary"><span class="text-sm font-medium text-gray-800">2 tiếng</span></label>
+                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors"><input type="checkbox" name="reminder" value="5h" class="rounded text-primary focus:ring-primary"><span class="text-sm font-medium text-gray-800">5 tiếng</span></label>
                 </div>
             </div>
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-2">
-            <i data-feather="palette" class="w-4 h-4 inline-block mr-1"></i>
-            Chọn màu (ưu tiên/loại):
-          </label>
-          <div id="color-options" class="flex flex-wrap gap-3">
-            <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
-              <input type="radio" name="taskColor" value="None" class="form-radio text-gray-500 focus:ring-gray-400" checked>
-              <span class="text-sm font-medium text-gray-800">Mặc định</span>
-            </label>
-            <label class="flex items-center gap-2 px-3 py-1 bg-green-100 rounded-full cursor-pointer hover:bg-green-200 transition-colors">
-              <input type="radio" name="taskColor" value="Green" class="form-radio text-green-500 focus:ring-green-400">
-              <span class="text-sm font-medium text-green-800">Xanh lá</span>
-            </label>
-            <label class="flex items-center gap-2 px-3 py-1 bg-yellow-100 rounded-full cursor-pointer hover:bg-yellow-200 transition-colors">
-              <input type="radio" name="taskColor" value="Yellow" class="form-radio text-yellow-500 focus:ring-yellow-400">
-              <span class="text-sm font-medium text-yellow-800">Vàng</span>
-            </label>
-            <label class="flex items-center gap-2 px-3 py-1 bg-red-100 rounded-full cursor-pointer hover:bg-red-200 transition-colors">
-              <input type="radio" name="taskColor" value="Red" class="form-radio text-red-500 focus:ring-red-400">
-              <span class="text-sm font-medium text-red-800">Đỏ</span>
-            </label>
-          </div>
-        </div>
-
-        <button type="submit" class="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
-          </button>
-      </form>
-    </section>
-        <button type="submit" class="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
-          <i data-feather="plus" class="w-5 h-5"></i>
-          Thêm Nhiệm Vụ Mới
-        </button>
-      </form>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2"><i data-feather="palette" class="w-4 h-4 inline-block mr-1"></i> Chọn màu (ưu tiên/loại):</label>
+                <div id="color-options" class="flex flex-wrap gap-3">
+                    <label class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors"><input type="radio" name="taskColor" value="None" class="form-radio text-gray-500 focus:ring-gray-400" checked><span class="text-sm font-medium text-gray-800">Mặc định</span></label>
+                    <label class="flex items-center gap-2 px-3 py-1 bg-green-100 rounded-full cursor-pointer hover:bg-green-200 transition-colors"><input type="radio" name="taskColor" value="Green" class="form-radio text-green-500 focus:ring-green-400"><span class="text-sm font-medium text-green-800">Xanh lá</span></label>
+                    <label class="flex items-center gap-2 px-3 py-1 bg-yellow-100 rounded-full cursor-pointer hover:bg-yellow-200 transition-colors"><input type="radio" name="taskColor" value="Yellow" class="form-radio text-yellow-500 focus:ring-yellow-400"><span class="text-sm font-medium text-yellow-800">Vàng</span></label>
+                    <label class="flex items-center gap-2 px-3 py-1 bg-red-100 rounded-full cursor-pointer hover:bg-red-200 transition-colors"><input type="radio" name="taskColor" value="Red" class="form-radio text-red-500 focus:ring-red-400"><span class="text-sm font-medium text-red-800">Đỏ</span></label>
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+                <i data-feather="plus" class="w-5 h-5"></i> Thêm Nhiệm Vụ Mới
+            </button>
+        </form>
     </section>
 
     <section class="glass-effect rounded-2xl p-6 shadow-xl">
-      <div class="flex items-center gap-3 mb-6">
-        <i data-feather="list" class="text-secondary w-6 h-6"></i>
-        <h2 class="text-2xl font-bold text-gray-800">📋 Danh Sách Cần Làm</h2>
-        <span id="task-count" class="bg-primary text-white px-3 py-1 rounded-full text-sm font-semibold">0</span>
-      </div>
-      <div id="task-list" class="space-y-4">
+        <div class="flex items-center gap-3 mb-6">
+            <i data-feather="list" class="text-secondary w-6 h-6"></i>
+            <h2 class="text-2xl font-bold text-gray-800">📋 Danh Sách Cần Làm</h2>
+            <span id="task-count" class="bg-primary text-white px-3 py-1 rounded-full text-sm font-semibold">0</span>
         </div>
+        <div id="task-list" class="space-y-4">
+            </div>
     </section>
-  </main>
+</main>
 
-  <div id="task-due-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50">
+<div id="task-due-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50">
     <div class="bg-white rounded-2xl p-6 mx-4 max-w-md w-full shadow-2xl pulse-alert">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2 text-secondary">
-          <i data-feather="alert-triangle" class="w-6 h-6"></i>
-          <h3 class="text-xl font-bold">⏰ Đã Đến Hạn!</h3>
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2 text-secondary">
+                <i data-feather="alert-triangle" class="w-6 h-6"></i>
+                <h3 class="text-xl font-bold">⏰ Đã Đến Hạn!</h3>
+            </div>
+            <button class="close-btn text-gray-400 hover:text-gray-600 transition-colors">
+                <i data-feather="x" class="w-6 h-6"></i>
+            </button>
         </div>
-        <button class="close-btn text-gray-400 hover:text-gray-600 transition-colors">
-          <i data-feather="x" class="w-6 h-6"></i>
+        <p class="text-gray-600 mb-3">Đã đến lúc hoàn thành nhiệm vụ:</p>
+        <strong id="modal-task-title" class="text-lg text-primary block bg-primary/10 p-3 rounded-xl"></strong>
+        <button class="w-full mt-4 bg-secondary text-white py-2 rounded-xl font-semibold hover:bg-secondary/90 transition-colors close-btn">
+            Đã Hiểu
         </button>
-      </div>
-      <p class="text-gray-600 mb-3">Đã đến lúc hoàn thành nhiệm vụ:</p>
-      <strong id="modal-task-title" class="text-lg text-primary block bg-primary/10 p-3 rounded-xl"></strong>
-      <button class="w-full mt-4 bg-secondary text-white py-2 rounded-xl font-semibold hover:bg-secondary/90 transition-colors close-btn">
-        Đã Hiểu
-      </button>
     </div>
-  </div>
+</div>
 
-  <audio id="notification-sound" preload="auto">
-    <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg">
-  </audio>
+<audio id="notification-sound" src="notification.mp3" preload="auto"></audio>
 
-  <script>
+<script>
     VANTA.NET({
-      el: "#vanta-bg",
-      mouseControls: true,
-      touchControls: true,
-      gyroControls: false,
-      minHeight: 200.00,
-      minWidth: 200.00,
-      scale: 1.00,
-      scaleMobile: 1.00,
-      color: 0x6366f1,
-      backgroundColor: 0xf0f9ff,
-      points: 12.00,
-      maxDistance: 25.00,
-      spacing: 18.00
+        el: "#vanta-bg", mouseControls: true, touchControls: true, gyroControls: false,
+        minHeight: 200.00, minWidth: 200.00, scale: 1.00, scaleMobile: 1.00,
+        color: 0x6366f1, backgroundColor: 0xf0f9ff, points: 12.00, maxDistance: 25.00, spacing: 18.00
     });
-    feather.replace();
-  </script>
+</script>
 
-  <script src="script.js" defer></script>
+<script src="script.js" defer></script>
 </body>
 </html>
