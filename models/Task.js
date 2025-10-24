@@ -33,6 +33,11 @@ const taskSchema = new mongoose.Schema({
     type: Map,
     of: Boolean,
     default: {}
+  },
+  color: {
+    type: String,
+    enum: ['Green', 'Yellow', 'Red', 'Blue', 'None'], // Chỉ cho phép các giá trị này
+    default: 'None' // Mặc định không có màu
   }
 }, { timestamps: true });
 const Task = mongoose.model('Task', taskSchema);

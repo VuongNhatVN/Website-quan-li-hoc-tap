@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
 
 // POST: Tạo nhiệm vụ mới
 router.post('/', async (req, res) => {
-    const { title, dueDate, reminderTimes } = req.body;
+    const { title, dueDate, reminderTimes, color } = req.body;
     if (!dueDate || isNaN(new Date(dueDate).getTime())) {
         return res.status(400).json({ message: 'Ngày hết hạn không hợp lệ.' });
     }
@@ -27,6 +27,7 @@ router.post('/', async (req, res) => {
             title,
             dueDate: new Date(dueDate), // Đảm bảo lưu dưới dạng Date
             reminderTimes,
+            color,
             user: req.user.id,
             notified: new Map() // Khởi tạo Map rỗng
         });
@@ -51,6 +52,7 @@ router.patch('/:id', async (req, res) => {
 
         const updatedTask = await Task.findByIdAndUpdate(
             req.params.id,
+            req.body.color,
             req.body,
             { new: true }
         );

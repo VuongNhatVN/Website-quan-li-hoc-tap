@@ -47,7 +47,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tasks.forEach(task => {
             const taskItem = document.createElement('div');
-            // Sử dụng class Tailwind từ file HTML mới
+            let colorClass = '';
+            switch (task.color) {
+                case 'Green': colorClass = 'border-l-4 border-green-500'; break;
+                case 'Yellow': colorClass = 'border-l-4 border-yellow-500'; break;
+                case 'Red': colorClass = 'border-l-4 border-red-500'; break;
+                case 'Blue': colorClass = 'border-l-4 border-blue-500'; break;
+                default: colorClass = 'border-l-4 border-transparent'; // Mặc định trong suốt
+            }
             taskItem.className = `task-card bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all task-item`;
             taskItem.dataset.id = task._id; // Gắn ID của MongoDB
             if (task.isCompleted) {
@@ -105,11 +112,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const dueDate = new Date(`${date}T${time}`);
         const reminderCheckboxes = document.querySelectorAll('#reminder-options input[name="reminder"]:checked');
         const reminderTimes = Array.from(reminderCheckboxes).map(checkbox => checkbox.value);
+        const selectedColorRadio = document.querySelector('#color-options input[name="taskColor"]:checked');
+        const color = selectedColorRadio ? selectedColorRadio.value : 'None';
         try {
             const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ title, dueDate: dueDate.toISOString(), reminderTimes }),
+                body: JSON.stringify({ title, dueDate: dueDate.toISOString(), color, reminderTimes }),
             });
             if (response.ok) {
                 taskTitleInput.value = '';
