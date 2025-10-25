@@ -300,7 +300,8 @@ document.addEventListener('DOMContentLoaded', () => {
     reminderOptions.addEventListener('change', saveReminderSettings);
 
     // === PHẦN CUỐI: KHỞI CHẠY BAN ĐẦU ===
-    loadReminderSettings(); // Tải cài đặt ngay khi vào trang
+    loadReminderSettings();
     fetchTasks();
     initializePushNotifications();
+    feather.replace();
 });
