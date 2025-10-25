@@ -31,8 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // === PHẦN 3: HÀM HIỂN THỊ TASK ===
     const displayTasks = (tasks) => {
         localTasks = tasks;
-        taskCount.textContent = tasks.length; // Cập nhật bộ đếm
-        taskList.innerHTML = ''; // Dọn dẹp
+        const uncompletedTasks = tasks.filter(task => !task.isCompleted);
+        taskCount.textContent = uncompletedTasks.length;
+        taskList.innerHTML = '';
 
         if (tasks.length === 0) {
             taskList.innerHTML = `
@@ -41,36 +42,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p>Chưa có nhiệm vụ nào. Hãy thêm nhiệm vụ đầu tiên của bạn!</p>
               </div>
             `;
-            feather.replace(); // Kích hoạt icon
+            feather.replace();
             return;
         }
 
         tasks.forEach(task => {
             const taskItem = document.createElement('div');
-            let colorClass = '';
+
+            // Xác định class màu sắc
+            let colorClass = 'border-l-4 border-transparent'; // Mặc định trong suốt
             switch (task.color) {
                 case 'Green': colorClass = 'border-l-4 border-green-500'; break;
                 case 'Yellow': colorClass = 'border-l-4 border-yellow-500'; break;
                 case 'Red': colorClass = 'border-l-4 border-red-500'; break;
                 case 'Blue': colorClass = 'border-l-4 border-blue-500'; break;
-                default: colorClass = 'border-l-4 border-transparent'; // Mặc định trong suốt
             }
-            taskItem.className = `task-card bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all task-item`;
+
+            // Gán class cho task item
+            taskItem.className = `task-card bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all task-item ${colorClass}`;
             taskItem.dataset.id = task._id; // Gắn ID của MongoDB
+
+            // Thêm class 'completed' nếu task đã hoàn thành (DÙNG CHO LOGIC CLICK)
             if (task.isCompleted) {
                 taskItem.classList.add('completed');
             }
 
-            const formattedDate = new Date(task.dueDate).toLocaleString('vi-VN');
-            
-            // Đây là cấu trúc HTML mới
+            const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+            const formattedDate = new Date(task.dueDate).toLocaleString('vi-VN', options);
+
+            // Cấu trúc HTML bên trong
             taskItem.innerHTML = `
               <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <input type="checkbox" class="w-5 h-5 text-primary rounded focus:ring-primary complete-btn" 
+                <div class="flex items-center gap-3 flex-grow min-w-0"> <input type="checkbox" class="w-5 h-5 text-primary rounded focus:ring-primary complete-btn flex-shrink-0"
                          ${task.isCompleted ? 'checked' : ''}>
-                  <div>
-                    <h3 class="font-semibold text-gray-800 ${task.isCompleted ? 'line-through text-gray-400' : ''}">
+                  <div class="min-w-0"> <h3 class="font-semibold text-gray-800 truncate ${task.isCompleted ? 'line-through text-gray-400' : ''}">
                       ${task.title}
                     </h3>
                     <p class="text-sm text-gray-500">
@@ -79,16 +84,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     </p>
                   </div>
                 </div>
-                <button class="text-gray-400 hover:text-red-500 transition-colors delete-btn">
-                  <i data-feather="trash-2" class="w-4 h-4"></i>
+                <button class="text-gray-400 hover:text-red-500 transition-colors delete-btn flex-shrink-0 ml-2"> <i data-feather="trash-2" class="w-4 h-4"></i>
                 </button>
               </div>
             `;
             taskList.appendChild(taskItem);
         });
 
-        // Rất quan trọng: Phải gọi lại feather.replace() sau khi thêm HTML động
-        feather.replace();
+        feather.replace(); // Kích hoạt lại icons sau khi thêm HTML
     };
 
     // === PHẦN 4: HÀM LẤY DỮ LIỆU ===
@@ -149,16 +152,41 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) { console.error('Lỗi khi xóa:', error); }
         }
 
-        if (target.closest('.complete-btn')) { // Xử lý khi nhấn checkbox
+        if (target.matches('.complete-btn') && target.type === 'checkbox') {
             try {
-                const isCompleted = !taskItem.classList.contains('completed');
+                // Trạng thái mới sẽ là trạng thái hiện tại của checkbox (true nếu checked, false nếu không)
+                const isCompleted = target.checked;
+
                 const response = await fetch(`${API_URL}/${taskId}`, {
                     method: 'PATCH',
                     headers,
-                    body: JSON.stringify({ isCompleted: isCompleted })
+                    body: JSON.stringify({ isCompleted: isCompleted }) // Gửi trạng thái mới lên server
                 });
-                if (response.ok) fetchTasks(); else alert('Cập nhật thất bại!');
-            } catch (error) { console.error('Lỗi khi cập nhật:', error); }
+
+                if (response.ok) {
+                    // Cập nhật giao diện ngay lập tức thay vì fetch lại toàn bộ (tùy chọn để mượt hơn)
+                    taskItem.classList.toggle('completed', isCompleted); // Thêm/xóa class 'completed'
+                    const titleElement = taskItem.querySelector('h3');
+                    if (titleElement) {
+                        titleElement.classList.toggle('line-through', isCompleted);
+                        titleElement.classList.toggle('text-gray-400', isCompleted);
+                    }
+                    // Cập nhật lại bộ đếm số task chưa hoàn thành
+                    const currentTasks = localTasks.map(t => t._id === taskId ? {...t, isCompleted: isCompleted} : t);
+                    const uncompletedCount = currentTasks.filter(t => !t.isCompleted).length;
+                    taskCount.textContent = uncompletedCount;
+                    localTasks = currentTasks; // Cập nhật lại localTasks
+
+                    // fetchTasks(); // Hoặc bạn có thể fetch lại như cũ nếu muốn đơn giản hơn
+                } else {
+                    alert('Cập nhật thất bại!');
+                    // Hoàn tác lại trạng thái checkbox nếu server báo lỗi
+                    target.checked = !isCompleted;
+                }
+            } catch (error) {
+                console.error('Lỗi khi cập nhật nhiệm vụ:', error);
+                target.checked = !target.checked; // Hoàn tác nếu có lỗi mạng
+            }
         }
     });
 
@@ -303,5 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadReminderSettings();
     fetchTasks();
     initializePushNotifications();
+    subscribeUserToPush();
     feather.replace();
 });

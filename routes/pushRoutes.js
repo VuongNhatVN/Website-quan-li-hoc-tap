@@ -9,32 +9,15 @@ router.get('/vapid-public-key', (req, res) => {
 });
 
 // Route 2: Nhận và lưu subscription của người dùng
-router.post('/subscribe', authMiddleware, async (req, res) => { // Thêm authMiddleware
-  const subscription = req.body;
-
-  try {
-    // Tìm và cập nhật user đang đăng nhập
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.id, // Lấy user ID từ middleware
-      { pushSubscription: subscription },
-      { new: true }
-    );
-
-    if (!updatedUser) {
-        return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+router.post('/subscribe', authMiddleware, async (req, res) => {
+    const subscription = req.body;
+    try {
+        await User.findByIdAndUpdate(req.user.id, { pushSubscription: subscription });
+        res.status(201).json({ message: 'Đăng ký nhận thông báo thành công!' });
+    } catch (error) {
+        console.error('Lỗi khi lưu subscription:', error);
+        res.status(500).json({ message: 'Lỗi server' });
     }
-
-    console.log('Đã lưu subscription cho user:', updatedUser.username);
-    res.status(201).json({});
-
-    // Gửi thông báo chào mừng (tùy chọn)
-    const payload = JSON.stringify({ title: 'Đăng ký thông báo thành công!', body: 'Bạn sẽ nhận được nhắc nhở nhiệm vụ.' });
-    webpush.sendNotification(subscription, payload).catch(error => console.error('Lỗi gửi thông báo chào mừng:', error));
-
-  } catch (error) {
-    console.error('Lỗi lưu subscription:', error);
-    res.status(500).json({ message: 'Lỗi máy chủ khi lưu subscription.' });
-  }
 });
 
 module.exports = router;
