@@ -42,23 +42,35 @@ router.post('/', async (req, res) => {
 // PATCH: Cập nhật một nhiệm vụ
 router.patch('/:id', async (req, res) => {
     try {
-        let task = await Task.findById(req.params.id);
-        if (!task) return res.status(404).json({ message: 'Không tìm thấy nhiệm vụ' });
+        const taskId = req.params.id;
+        const userId = req.user.id;
+        // Chỉ lấy trường 'isCompleted' từ body để cập nhật
+        const { isCompleted } = req.body;
 
-        // KIỂM TRA QUYỀN SỞ HỮU
-        if (task.user.toString() !== req.user.id) {
-            return res.status(401).json({ message: 'Không có quyền thực hiện hành động này' });
+        // Thêm log để kiểm tra giá trị nhận được
+        console.log(`Nhận yêu cầu PATCH cho task ${taskId}, isCompleted: ${isCompleted}`);
+
+        // Kiểm tra xem isCompleted có được gửi lên không
+        if (typeof isCompleted !== 'boolean') {
+             return res.status(400).json({ message: 'Trạng thái hoàn thành không hợp lệ.' });
         }
 
-        const updatedTask = await Task.findByIdAndUpdate(
-            req.params.id,
-            req.body.color,
-            req.body,
-            { new: true }
-        );
+        // Tìm task VÀ kiểm tra quyền sở hữu
+        const task = await Task.findOne({ _id: taskId, user: userId });
+        if (!task) {
+            return res.status(404).json({ message: 'Không tìm thấy nhiệm vụ hoặc bạn không có quyền.' });
+        }
+
+        // Cập nhật trạng thái
+        task.isCompleted = isCompleted;
+        const updatedTask = await task.save(); // Sử dụng save() để trigger middleware (nếu có)
+
+        console.log(`Cập nhật thành công task ${taskId}, isCompleted mới: ${updatedTask.isCompleted}`);
         res.json(updatedTask);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
+
+    } catch (error) {
+        console.error(`Lỗi khi cập nhật task ${req.params.id}:`, error);
+        res.status(400).json({ message: error.message || 'Không thể cập nhật nhiệm vụ.' });
     }
 });
 

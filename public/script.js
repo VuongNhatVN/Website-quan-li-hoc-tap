@@ -73,9 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Cấu trúc HTML bên trong
             taskItem.innerHTML = `
               <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3 flex-grow min-w-0"> <input type="checkbox" class="w-5 h-5 text-primary rounded focus:ring-primary complete-btn flex-shrink-0"
-                         ${task.isCompleted ? 'checked' : ''}>
-                  <div class="min-w-0"> <h3 class="font-semibold text-gray-800 truncate ${task.isCompleted ? 'line-through text-gray-400' : ''}">
+                <div class="flex items-center gap-3 flex-grow min-w-0">
+                  <input type="checkbox" class="w-5 h-5 text-primary rounded focus:ring-primary complete-btn flex-shrink-0"
+                         ${task.isCompleted ? 'checked' : ''} aria-label="Đánh dấu hoàn thành"> <div class="min-w-0">
+                    <h3 class="font-semibold text-gray-800 truncate ${task.isCompleted ? 'line-through text-gray-400' : ''}">
                       ${task.title}
                     </h3>
                     <p class="text-sm text-gray-500">
@@ -84,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </p>
                   </div>
                 </div>
-                <button class="text-gray-400 hover:text-red-500 transition-colors delete-btn flex-shrink-0 ml-2"> <i data-feather="trash-2" class="w-4 h-4"></i>
+                <button class="text-gray-400 hover:text-red-500 transition-colors delete-btn flex-shrink-0 ml-2" aria-label="Xóa nhiệm vụ"> <i data-feather="trash-2" class="w-4 h-4"></i>
                 </button>
               </div>
             `;
